@@ -134,7 +134,23 @@ jobs:
           python3 tool/ensure_android_internet.py
           flutter pub get
       - name: Build Android APK
-        run: flutter build apk --release --dart-define=CBR_UPSTREAM_COMMIT=${{ needs.detect.outputs.sha }}
+        shell: bash
+        run: |
+          set +e
+          flutter build apk --release --dart-define=CBR_UPSTREAM_COMMIT=${{ needs.detect.outputs.sha }} > /tmp/android-apk-build.log 2>&1
+          result=$?
+          tail -n 80 /tmp/android-apk-build.log
+          if [[ "$result" -ne 0 ]]; then
+            python3 - <<'PY'
+          from pathlib import Path
+
+          lines = Path('/tmp/android-apk-build.log').read_text(errors='replace').splitlines()
+          message = chr(10).join(lines[-80:])[:30000]
+          message = message.replace('%', '%25').replace(chr(13), '').replace(chr(10), '%0A')
+          print(f'::error title=Android APK build diagnostics::{message}')
+          PY
+          fi
+          exit "$result"
       - name: Build Android App Bundle
         run: flutter build appbundle --release --dart-define=CBR_UPSTREAM_COMMIT=${{ needs.detect.outputs.sha }}
       - name: Build Linux desktop
