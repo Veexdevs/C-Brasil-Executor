@@ -139,7 +139,7 @@ class _Lexer {
         '(', ')', '{', '}', '[', ']', ',', ';', '.',
         '+', '-', '*', '/', '%', '<', '>', '=', '!',
       };
-      if (!symbols.contains(symbol)) {
+      if (!symbols.contains(symbol) && !twoCharacterOperators.contains(symbol)) {
         throw CbrException(
           'Caractere inesperado "$char".',
           line: line,

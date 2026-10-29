@@ -87,7 +87,7 @@ while (true) {
         CbrInterpreter(source, stepLimit: 12).run(),
         throwsA(
           isA<CbrException>()
-              .having((error) => error.line, 'linha', 2)
+              .having((error) => error.line, 'linha', 1)
               .having((error) => error.message, 'mensagem', contains('loop infinito')),
         ),
       );
