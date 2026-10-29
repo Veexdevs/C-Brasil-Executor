@@ -51,10 +51,36 @@ jobs:
               if os.path.isabs(location):
                   location = os.path.relpath(location, os.getcwd())
               severity = 'error' if fields[0] == 'ERROR' else 'warning'
-              message = fields[7].replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
+              message = fields[7].replace('%', '%25').replace(chr(13), ' ').replace(chr(10), ' ')
               print(f'::{severity} file={location},line={fields[4]},col={fields[5]}::{message}')
           PY
           exit "$result"
 
       - name: Test interpreter
-        run: flutter test --no-pub
+        shell: bash
+        run: |
+          set +e
+          flutter test --no-pub --reporter json > /tmp/flutter-test.jsonl 2>&1
+          result=$?
+          cat /tmp/flutter-test.jsonl
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+
+          names = {}
+          for line in Path('/tmp/flutter-test.jsonl').read_text(errors='replace').splitlines():
+              try:
+                  event = json.loads(line)
+              except json.JSONDecodeError:
+                  continue
+              test = event.get('test') or {}
+              if event.get('type') == 'testStart':
+                  names[test.get('id')] = test.get('name', 'Cbr test')
+              if event.get('type') == 'error':
+                  name = names.get(event.get('testID'), 'Cbr test')
+                  detail = event.get('error', 'Test failed')
+                  stack = event.get('stackTrace', '')
+                  message = f'{name}: {detail} {stack}'.replace('%', '%25').replace(chr(13), ' ').replace(chr(10), ' ')
+                  print(f'::error file=test/interpreter_test.dart,title={name}::{message}')
+          PY
+          exit "$result"
