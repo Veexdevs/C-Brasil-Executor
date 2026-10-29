@@ -2,7 +2,7 @@ name: Upstream monitor and multiplatform builds
 
 on:
   push:
-    branches: [main]
+    branches: ['**']
     tags: ['v*']
   schedule:
     - cron: '23 */6 * * *'
@@ -265,7 +265,7 @@ jobs:
   deploy-pages:
     name: Publish website to GitHub Pages
     needs: [detect, web]
-    if: needs.detect.outputs.should_build == 'true' && needs.web.result == 'success'
+    if: needs.detect.outputs.should_build == 'true' && needs.web.result == 'success' && (github.event_name == 'schedule' || github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'))
     runs-on: ubuntu-latest
     environment:
       name: github-pages

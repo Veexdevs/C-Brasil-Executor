@@ -43,7 +43,7 @@ Para distribuir iOS é necessário assinar o app com certificados e provisioning
 ## Site e builds automáticos
 
 - `.github/workflows/ci.yml` formata, analisa e testa o interpretador em cada atualização e pull request.
-- `.github/workflows/upstream-watch.yml` consulta `https://github.com/vorgweb/C-Brasil` a cada seis horas. Quando há uma revisão nova, recompila Web, APK/AAB, iOS, Windows, macOS e Linux, publica o site no GitHub Pages e cria um pré-lançamento com os bundles; também pode ser executado manualmente. Tags `v*` publicam um release estável.
+- `.github/workflows/upstream-watch.yml` compila as plataformas em cada push e consulta `https://github.com/vorgweb/C-Brasil` a cada seis horas. Em uma revisão upstream nova, recompila Web, APK/AAB, iOS, Windows, macOS e Linux e cria um pré-lançamento com os bundles. O site só é publicado pelo `main`/monitor agendado; tags `v*` publicam um release estável.
 - No repositório, selecione **Settings → Pages → Build and deployment → GitHub Actions** para ativar o destino do Pages uma vez. O app consulta a revisão upstream ao abrir e periodicamente enquanto está aberto.
 - Os bundles também ficam nos artefatos da execução na aba **Actions**. O monitor consulta o endpoint público da API do GitHub; para o deploy e releases, usa as permissões `pages: write`, `id-token: write` e `contents: write`.
 
