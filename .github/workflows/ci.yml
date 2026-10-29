@@ -56,6 +56,9 @@ jobs:
           PY
           exit "$result"
 
+      - name: Build Vercel web output
+        run: bash tool/build_vercel_web.sh
+
       - name: Test interpreter
         shell: bash
         run: |

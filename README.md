@@ -15,7 +15,7 @@ O interpretador acompanha o subconjunto atual Cbr 0.6, incluindo as limitações
 
 ## Rodar localmente
 
-Instale Flutter stable e, na raiz do projeto, gere os runners nativos (eles também são criados pelo CI):
+Instale Flutter stable 3.38.0 ou mais recente e, na raiz do projeto, gere os runners nativos (eles também são criados pelo CI):
 
 ```sh
 flutter create --platforms=web,android,ios,windows,macos,linux --project-name=c_brasil_executor .
@@ -43,7 +43,9 @@ Para distribuir iOS é necessário assinar o app com certificados e provisioning
 ## Site e builds automáticos
 
 - `.github/workflows/ci.yml` formata, analisa e testa o interpretador em cada atualização e pull request.
-- `.github/workflows/upstream-watch.yml` consulta `https://github.com/vorgweb/C-Brasil` a cada seis horas. Quando há uma revisão nova, recompila Web, APK/AAB, iOS, Windows, macOS e Linux, publica o site no GitHub Pages e cria um pré-lançamento com os bundles; também pode ser executado manualmente. Tags `v*` publicam um release estável.
+- `.github/workflows/upstream-watch.yml` compila Web, APK/AAB, iOS, Windows, macOS e Linux a cada push (inclusive branches de teste) e consulta `https://github.com/vorgweb/C-Brasil` a cada seis horas. Quando há uma revisão upstream nova, recompila todas as plataformas e cria um pré-lançamento com os bundles. O GitHub Pages é publicado apenas a partir de `main` ou da verificação agendada; tags `v*` publicam um release estável.
+- `vercel.json` configura o build Web do Flutter para Vercel: `tool/build_vercel_web.sh` instala/cacheia o SDK Flutter estável e gera `build/web` para publicação estática. O primeiro build pode demorar mais por baixar o SDK.
+- Para que `https://c-brasil-executor.vercel.app/` seja público, desative **Vercel Authentication/Deployment Protection** para o domínio `.vercel.app` em **Project Settings → Deployment Protection**. A configuração de proteção fica na conta Vercel, não no repositório.
 - No repositório, selecione **Settings → Pages → Build and deployment → GitHub Actions** para ativar o destino do Pages uma vez. O app consulta a revisão upstream ao abrir e periodicamente enquanto está aberto.
 - Os bundles também ficam nos artefatos da execução na aba **Actions**. O monitor consulta o endpoint público da API do GitHub; para o deploy e releases, usa as permissões `pages: write`, `id-token: write` e `contents: write`.
 

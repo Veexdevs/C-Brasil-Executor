@@ -19,7 +19,6 @@ const _green = Color(0xFF20C77A);
 const _greenBright = Color(0xFF45E39A);
 const _yellow = Color(0xFFFFD166);
 const _blue = Color(0xFF52B7F5);
-const _red = Color(0xFFFF717B);
 const _compiledUpstreamRevision = String.fromEnvironment(
   'CBR_UPSTREAM_COMMIT',
   defaultValue: '935b21d8a482f8073dd613a6901894fb6530c1d4',
@@ -100,7 +99,7 @@ class CbrApp extends StatelessWidget {
       secondary: _yellow,
       tertiary: _blue,
       surface: _surface,
-      error: _red,
+      error: _blue,
     );
     return MaterialApp(
       title: 'C Brasil — Executor CBR',
@@ -282,17 +281,13 @@ class _CbrHomeState extends State<CbrHome> {
 
   Future<void> _openFile() async {
     try {
-      final selection = await FilePicker.platform.pickFiles(
+      final selection = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: const ['cbr', 'txt'],
-        withData: true,
       );
       if (selection == null || selection.files.isEmpty) return;
       final file = selection.files.single;
-      final bytes = file.bytes;
-      if (bytes == null) {
-        throw const FormatException('Não foi possível ler os dados do arquivo.');
-      }
+      final bytes = await file.readAsBytes();
       if (!mounted) return;
       setState(() {
         _filename = file.name;
@@ -311,7 +306,7 @@ class _CbrHomeState extends State<CbrHome> {
   Future<void> _saveFile() async {
     try {
       final filename = _filename.toLowerCase().endsWith('.cbr') ? _filename : '$_filename.cbr';
-      final path = await FilePicker.platform.saveFile(
+      final path = await FilePicker.saveFile(
         fileName: filename,
         type: FileType.custom,
         allowedExtensions: const ['cbr', 'txt'],
@@ -1134,20 +1129,20 @@ class _ConsolePanel extends StatelessWidget {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(15, 11, 15, 12),
-              color: success ? _green.withValues(alpha: 0.035) : _red.withValues(alpha: 0.045),
+              color: success ? _green.withValues(alpha: 0.035) : _blue.withValues(alpha: 0.045),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Icon(
                     running ? Icons.more_horiz_rounded : success ? Icons.check_circle_outline_rounded : Icons.error_outline_rounded,
                     size: 16,
-                    color: running ? _yellow : success ? _greenBright : _red,
+                    color: running ? _yellow : success ? _greenBright : _blue,
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       message!,
-                      style: TextStyle(color: running ? _yellow : success ? _greenBright : _red, fontSize: 11.5),
+                      style: TextStyle(color: running ? _yellow : success ? _greenBright : _blue, fontSize: 11.5),
                     ),
                   ),
                 ],

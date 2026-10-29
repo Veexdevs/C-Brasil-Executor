@@ -2,7 +2,7 @@ name: Upstream monitor and multiplatform builds
 
 on:
   push:
-    branches: [main]
+    branches: ['**']
     tags: ['v*']
   schedule:
     - cron: '23 */6 * * *'
@@ -134,12 +134,36 @@ jobs:
           python3 tool/ensure_android_internet.py
           flutter pub get
       - name: Build Android APK
-        run: flutter build apk --release --dart-define=CBR_UPSTREAM_COMMIT=${{ needs.detect.outputs.sha }}
+        continue-on-error: true
+        shell: bash
+        run: |
+          set +e
+          flutter build apk --release --dart-define=CBR_UPSTREAM_COMMIT=${{ needs.detect.outputs.sha }} > /tmp/android-apk-build.log 2>&1
+          result=$?
+          tail -n 30 /tmp/android-apk-build.log
+          if [[ "$result" -ne 0 ]]; then
+            python3 - <<'PY'
+          from pathlib import Path
+
+          lines = Path('/tmp/android-apk-build.log').read_text(errors='replace').splitlines()
+          marker = next((i for i, line in enumerate(lines) if '* What went wrong:' in line), None)
+          detail = lines[marker:] if marker is not None else lines[-30:]
+          message = chr(10).join(detail)
+          if len(message) > 1700:
+              message = message[:400] + chr(10) + '…' + chr(10) + message[-1200:]
+          message = message.replace('%', '%25').replace(chr(13), '').replace(chr(10), '%0A')
+          print(f'::error title=Android APK build diagnostics::{message}')
+          PY
+          fi
+          exit "$result"
       - name: Build Android App Bundle
+        continue-on-error: true
         run: flutter build appbundle --release --dart-define=CBR_UPSTREAM_COMMIT=${{ needs.detect.outputs.sha }}
       - name: Build Linux desktop
+        continue-on-error: true
         run: flutter build linux --release --dart-define=CBR_UPSTREAM_COMMIT=${{ needs.detect.outputs.sha }}
       - name: Package Linux tarball and Debian package
+        continue-on-error: true
         shell: bash
         run: |
           tar -czf cbrasil-linux-x64.tar.gz -C build/linux/x64/release/bundle .
@@ -162,33 +186,53 @@ jobs:
           chmod 755 /tmp/cbr-deb/usr/bin/cbrasil-executor
           dpkg-deb --build --root-owner-group /tmp/cbr-deb cbrasil-linux-amd64.deb
       - name: Upload Android APK
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: cbrasil-android-apk-${{ needs.detect.outputs.sha }}
           path: build/app/outputs/flutter-apk/app-release.apk
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 30
       - name: Upload Android App Bundle
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: cbrasil-android-aab-${{ needs.detect.outputs.sha }}
           path: build/app/outputs/bundle/release/app-release.aab
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 30
       - name: Upload Linux bundle
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: cbrasil-linux-x64-${{ needs.detect.outputs.sha }}
           path: cbrasil-linux-x64.tar.gz
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 30
       - name: Upload Debian package
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: cbrasil-linux-deb-${{ needs.detect.outputs.sha }}
           path: cbrasil-linux-amd64.deb
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 30
+      - name: Verify Android and Linux outputs
+        if: always()
+        shell: bash
+        run: |
+          missing=0
+          for file in \
+            build/app/outputs/flutter-apk/app-release.apk \
+            build/app/outputs/bundle/release/app-release.aab \
+            cbrasil-linux-x64.tar.gz \
+            cbrasil-linux-amd64.deb; do
+            if [[ ! -s "$file" ]]; then
+              echo "::error title=Missing build output::$file was not produced."
+              missing=1
+            fi
+          done
+          exit "$missing"
 
   windows:
     name: Build Windows desktop
@@ -265,7 +309,7 @@ jobs:
   deploy-pages:
     name: Publish website to GitHub Pages
     needs: [detect, web]
-    if: needs.detect.outputs.should_build == 'true' && needs.web.result == 'success'
+    if: needs.detect.outputs.should_build == 'true' && needs.web.result == 'success' && (github.event_name == 'schedule' || github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'))
     runs-on: ubuntu-latest
     environment:
       name: github-pages
