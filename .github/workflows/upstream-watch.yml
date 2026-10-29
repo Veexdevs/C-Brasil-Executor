@@ -1,0 +1,316 @@
+name: Upstream monitor and multiplatform builds
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  schedule:
+    - cron: '23 */6 * * *'
+  workflow_dispatch:
+    inputs:
+      force_rebuild:
+        description: Rebuild all platform artifacts now
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: cbr-upstream-builds
+  cancel-in-progress: false
+
+jobs:
+  detect:
+    name: Check C-Brasil upstream
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.revision.outputs.sha }}
+      should_build: ${{ steps.decision.outputs.should_build }}
+    steps:
+      - name: Read upstream main revision
+        id: revision
+        shell: bash
+        run: |
+          set -euo pipefail
+          SHA="$(git ls-remote https://github.com/vorgweb/C-Brasil.git refs/heads/main | cut -f1)"
+          if [[ -z "$SHA" ]]; then
+            echo 'Could not resolve vorgweb/C-Brasil main.' >&2
+            exit 1
+          fi
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          echo "C-Brasil upstream: $SHA"
+
+      - name: Restore last successful upstream marker
+        id: marker
+        if: github.event_name == 'schedule'
+        uses: actions/cache/restore@v4
+        with:
+          path: .upstream-cache
+          key: cbr-upstream-${{ steps.revision.outputs.sha }}
+          restore-keys: |
+            cbr-upstream-
+
+      - name: Decide whether a new build is needed
+        id: decision
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          CACHE_HIT: ${{ steps.marker.outputs.cache-hit }}
+          FORCE_REBUILD: ${{ inputs.force_rebuild }}
+        run: |
+          if [[ "$EVENT_NAME" != 'schedule' ]]; then
+            echo 'should_build=true' >> "$GITHUB_OUTPUT"
+          elif [[ "$CACHE_HIT" == 'true' && "$FORCE_REBUILD" != 'true' ]]; then
+            echo 'should_build=false' >> "$GITHUB_OUTPUT"
+            echo 'No upstream change; skipping platform rebuild.'
+          else
+            echo 'should_build=true' >> "$GITHUB_OUTPUT"
+            echo 'New upstream revision (or forced rebuild) detected.'
+          fi
+
+  web:
+    name: Build Flutter Web
+    needs: detect
+    if: needs.detect.outputs.should_build == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Generate web runner and resolve dependencies
+        run: |
+          flutter create --platforms=web --project-name=c_brasil_executor .
+          flutter pub get
+      - name: Build web app
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REPOSITORY#*/}" == "${GITHUB_REPOSITORY_OWNER}.github.io" ]]; then
+            BASE_HREF='/'
+          else
+            BASE_HREF="/${GITHUB_REPOSITORY#*/}/"
+          fi
+          flutter build web --release \
+            --base-href "$BASE_HREF" \
+            --dart-define=CBR_UPSTREAM_COMMIT=${{ needs.detect.outputs.sha }}
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/web
+      - name: Package web build
+        run: tar -czf cbrasil-web.tar.gz -C build/web .
+      - name: Save web artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cbrasil-web-${{ needs.detect.outputs.sha }}
+          path: cbrasil-web.tar.gz
+          if-no-files-found: error
+          retention-days: 30
+
+  android-linux:
+    name: Build Android APK and Linux bundle
+    needs: detect
+    if: needs.detect.outputs.should_build == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Linux desktop dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Generate native runners and resolve dependencies
+        run: |
+          flutter config --enable-linux-desktop
+          flutter create --platforms=android,linux --project-name=c_brasil_executor .
+          python3 tool/ensure_android_internet.py
+          flutter pub get
+      - name: Build Android APK
+        run: flutter build apk --release --dart-define=CBR_UPSTREAM_COMMIT=${{ needs.detect.outputs.sha }}
+      - name: Build Android App Bundle
+        run: flutter build appbundle --release --dart-define=CBR_UPSTREAM_COMMIT=${{ needs.detect.outputs.sha }}
+      - name: Build Linux desktop
+        run: flutter build linux --release --dart-define=CBR_UPSTREAM_COMMIT=${{ needs.detect.outputs.sha }}
+      - name: Package Linux tarball and Debian package
+        shell: bash
+        run: |
+          tar -czf cbrasil-linux-x64.tar.gz -C build/linux/x64/release/bundle .
+          mkdir -p /tmp/cbr-deb/DEBIAN /tmp/cbr-deb/usr/lib/cbrasil-executor /tmp/cbr-deb/usr/bin
+          cp -R build/linux/x64/release/bundle/. /tmp/cbr-deb/usr/lib/cbrasil-executor/
+          cat > /tmp/cbr-deb/DEBIAN/control <<'CONTROL'
+          Package: cbrasil-executor
+          Version: 1.0.0
+          Section: education
+          Priority: optional
+          Architecture: amd64
+          Maintainer: C Brasil
+          Description: Editor e executor local da linguagem C Brasil (CBR)
+          Depends: libgtk-3-0, libblkid1, liblzma5
+          CONTROL
+          cat > /tmp/cbr-deb/usr/bin/cbrasil-executor <<'LAUNCHER'
+          #!/bin/sh
+          exec /usr/lib/cbrasil-executor/c_brasil_executor "$@"
+          LAUNCHER
+          chmod 755 /tmp/cbr-deb/usr/bin/cbrasil-executor
+          dpkg-deb --build --root-owner-group /tmp/cbr-deb cbrasil-linux-amd64.deb
+      - name: Upload Android APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: cbrasil-android-apk-${{ needs.detect.outputs.sha }}
+          path: build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
+          retention-days: 30
+      - name: Upload Android App Bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: cbrasil-android-aab-${{ needs.detect.outputs.sha }}
+          path: build/app/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+          retention-days: 30
+      - name: Upload Linux bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: cbrasil-linux-x64-${{ needs.detect.outputs.sha }}
+          path: cbrasil-linux-x64.tar.gz
+          if-no-files-found: error
+          retention-days: 30
+      - name: Upload Debian package
+        uses: actions/upload-artifact@v4
+        with:
+          name: cbrasil-linux-deb-${{ needs.detect.outputs.sha }}
+          path: cbrasil-linux-amd64.deb
+          if-no-files-found: error
+          retention-days: 30
+
+  windows:
+    name: Build Windows desktop
+    needs: detect
+    if: needs.detect.outputs.should_build == 'true'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Generate Windows runner and resolve dependencies
+        run: |
+          flutter config --enable-windows-desktop
+          flutter create --platforms=windows --project-name=c_brasil_executor .
+          flutter pub get
+      - name: Build Windows release
+        run: flutter build windows --release --dart-define=CBR_UPSTREAM_COMMIT=${{ needs.detect.outputs.sha }}
+      - name: Package executable and runtime files
+        shell: pwsh
+        run: Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath cbrasil-windows-x64.zip
+      - name: Upload Windows bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: cbrasil-windows-x64-${{ needs.detect.outputs.sha }}
+          path: cbrasil-windows-x64.zip
+          if-no-files-found: error
+          retention-days: 30
+
+  apple:
+    name: Build iOS IPA and macOS app
+    needs: detect
+    if: needs.detect.outputs.should_build == 'true'
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Generate Apple runners and resolve dependencies
+        run: |
+          flutter config --enable-macos-desktop
+          flutter create --platforms=ios,macos --project-name=c_brasil_executor .
+          flutter pub get
+      - name: Build unsigned iOS app
+        run: flutter build ios --release --no-codesign --dart-define=CBR_UPSTREAM_COMMIT=${{ needs.detect.outputs.sha }}
+      - name: Package unsigned IPA
+        shell: bash
+        run: |
+          mkdir -p /tmp/cbr-ipa/Payload
+          cp -R build/ios/iphoneos/Runner.app /tmp/cbr-ipa/Payload/
+          (cd /tmp/cbr-ipa && zip -qr "$GITHUB_WORKSPACE/cbrasil-ios-unsigned.ipa" Payload)
+      - name: Build macOS app
+        run: flutter build macos --release --dart-define=CBR_UPSTREAM_COMMIT=${{ needs.detect.outputs.sha }}
+      - name: Package macOS app
+        run: ditto -c -k --sequesterRsrc --keepParent build/macos/Build/Products/Release/c_brasil_executor.app cbrasil-macos.zip
+      - name: Upload unsigned iOS IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: cbrasil-ios-unsigned-${{ needs.detect.outputs.sha }}
+          path: cbrasil-ios-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 30
+      - name: Upload macOS bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: cbrasil-macos-${{ needs.detect.outputs.sha }}
+          path: cbrasil-macos.zip
+          if-no-files-found: error
+          retention-days: 30
+
+  deploy-pages:
+    name: Publish website to GitHub Pages
+    needs: [detect, web]
+    if: needs.detect.outputs.should_build == 'true' && needs.web.result == 'success'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy Pages artifact
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  publish-release:
+    name: Publish platform files as a GitHub Release
+    needs: [detect, web, android-linux, windows, apple]
+    if: needs.detect.outputs.should_build == 'true' && (github.event_name == 'schedule' || startsWith(github.ref, 'refs/tags/v'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          pattern: cbrasil-*-${{ needs.detect.outputs.sha }}
+          merge-multiple: true
+      - name: Publish release files
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || format('upstream-{0}', needs.detect.outputs.sha) }}
+          target_commitish: ${{ github.sha }}
+          name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || format('C Brasil • upstream {0}', needs.detect.outputs.sha) }}
+          prerelease: ${{ github.event_name == 'schedule' }}
+          generate_release_notes: ${{ startsWith(github.ref, 'refs/tags/v') }}
+          files: release-assets/*
+
+  remember-upstream:
+    name: Remember successfully built upstream revision
+    needs: [detect, web, android-linux, windows, apple]
+    if: needs.detect.outputs.should_build == 'true' && needs.web.result == 'success' && needs.android-linux.result == 'success' && needs.windows.result == 'success' && needs.apple.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Write revision marker
+        run: |
+          mkdir -p .upstream-cache
+          echo '${{ needs.detect.outputs.sha }}' > .upstream-cache/revision
+      - name: Cache successful revision
+        uses: actions/cache/save@v4
+        with:
+          path: .upstream-cache
+          key: cbr-upstream-${{ needs.detect.outputs.sha }}
