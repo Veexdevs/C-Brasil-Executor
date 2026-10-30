@@ -1,89 +1,143 @@
-name: Flutter CI
+name: CI
 
 on:
   push:
-    branches: ['**']
   pull_request:
   workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  test:
-    name: Analyze and test Cbr
+  verify:
+    name: Analisar, testar e conferir a linguagem
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Flutter
+      - name: Instalar Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
 
-      - name: Resolve dependencies
+      - name: Dependências
         run: flutter pub get
 
-      - name: Format Dart files
-        run: dart format lib test
+      - name: Analisar código
+        run: python3 tool/ci/analyze.py
 
-      - name: Analyze
-        shell: bash
+      - name: Testes do interpretador e da interface
+        run: python3 tool/ci/test.py
+
+      - name: Conformidade com o compilador oficial
+        run: bash tool/conformance/verify_upstream.sh
+
+      - name: Build web
+        run: python3 tool/ci/annotate.py flutter build web --release
+
+  scaffold:
+    name: Gerar runners nativos
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[scaffold]')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Instalar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: flutter create
         run: |
-          set +e
-          dart analyze --format=machine lib test > /tmp/analyzer-machine.txt 2>&1
-          result=$?
-          cat /tmp/analyzer-machine.txt
-          python3 - <<'PY'
-          from pathlib import Path
-          import os
-          import urllib.parse
+          set -euo pipefail
+          rm -rf /tmp/scaffold && mkdir -p /tmp/scaffold
+          cd /tmp/scaffold
+          flutter create \
+            --project-name c_brasil_executor \
+            --org br.com.cbrasil \
+            --platforms=android,ios,linux,macos,windows \
+            app
+          cd "$GITHUB_WORKSPACE"
+          for dir in android ios linux macos windows; do
+            rm -rf "$dir"
+            mkdir -p "$dir"
+            cp -a "/tmp/scaffold/app/$dir/." "$dir/"
+          done
 
-          for line in Path('/tmp/analyzer-machine.txt').read_text(errors='replace').splitlines():
-              fields = line.split('|', 7)
-              if len(fields) < 8 or fields[0] not in {'ERROR', 'WARNING'}:
-                  continue
-              location = fields[3]
-              if location.startswith('file:'):
-                  location = urllib.parse.urlparse(location).path
-              if os.path.isabs(location):
-                  location = os.path.relpath(location, os.getcwd())
-              severity = 'error' if fields[0] == 'ERROR' else 'warning'
-              message = fields[7].replace('%', '%25').replace(chr(13), ' ').replace(chr(10), ' ')
-              print(f'::{severity} file={location},line={fields[4]},col={fields[5]}::{message}')
-          PY
-          exit "$result"
-
-      - name: Build Vercel web output
-        run: bash tool/build_vercel_web.sh
-
-      - name: Test interpreter
-        shell: bash
+      - name: Commitar runners
         run: |
-          set +e
-          flutter test --no-pub --reporter json > /tmp/flutter-test.jsonl 2>&1
-          result=$?
-          cat /tmp/flutter-test.jsonl
-          python3 - <<'PY'
-          from pathlib import Path
-          import json
+          set -euo pipefail
+          git config user.name "C Brasil Bot"
+          git config user.email "cbr-bot@users.noreply.github.com"
+          git add android ios linux macos windows
+          if git diff --cached --quiet; then
+            echo "Nada para commitar."
+            exit 0
+          fi
+          git commit -m "chore: gerar runners nativos com flutter create"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
 
-          names = {}
-          for line in Path('/tmp/flutter-test.jsonl').read_text(errors='replace').splitlines():
-              try:
-                  event = json.loads(line)
-              except json.JSONDecodeError:
-                  continue
-              test = event.get('test') or {}
-              if event.get('type') == 'testStart':
-                  names[test.get('id')] = test.get('name', 'Cbr test')
-              if event.get('type') == 'error':
-                  name = names.get(event.get('testID'), 'Cbr test')
-                  detail = event.get('error', 'Test failed')
-                  stack = event.get('stackTrace', '')
-                  message = f'{name}: {detail} {stack}'.replace('%', '%25').replace(chr(13), ' ').replace(chr(10), ' ')
-                  print(f'::error file=test/interpreter_test.dart,title={name}::{message}')
-          PY
-          exit "$result"
+  goldens:
+    name: Atualizar saídas oficiais
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[goldens]')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compilar o compilador oficial e regravar as saídas
+        run: CBR_UPDATE_GOLDENS=1 bash tool/conformance/verify_upstream.sh
+
+      - name: Commitar golden files
+        run: |
+          set -euo pipefail
+          git config user.name "C Brasil Bot"
+          git config user.email "cbr-bot@users.noreply.github.com"
+          git add test/conformance/expected
+          if git diff --cached --quiet; then
+            echo "Já estava atualizado."
+            exit 0
+          fi
+          git commit -m "test: atualizar saídas oficiais do compilador Cbr"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+
+  format:
+    name: Formatar código
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[format]')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: dart format
+        run: dart format lib test tool
+
+      - name: Commitar formatação
+        run: |
+          set -euo pipefail
+          git config user.name "C Brasil Bot"
+          git config user.email "cbr-bot@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Já estava formatado."
+            exit 0
+          fi
+          git commit -m "style: aplicar dart format"
+          git push origin "HEAD:${GITHUB_REF_NAME}"

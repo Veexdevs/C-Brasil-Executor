@@ -4,12 +4,138 @@
   <base href="$FLUTTER_BASE_HREF">
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=Edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#0b1118">
-  <meta name="description" content="C Brasil (CBR) — escreva, execute e aprenda uma linguagem de programação brasileira.">
-  <title>C Brasil — Executor CBR</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0B1118">
+  <meta name="color-scheme" content="dark">
+  <meta name="description" content="C Brasil (CBR) — escreva, execute e aprenda uma linguagem de programação brasileira. Editor, console e documentação no navegador, sem servidor.">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="C Brasil">
+  <meta property="og:title" content="C Brasil (CBR) — Executor">
+  <meta property="og:description" content="Escreva, execute e aprenda a linguagem C Brasil direto no navegador.">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="icons/Icon-512.png">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+  <link rel="icon" type="image/png" href="favicon.png">
+  <title>C Brasil (CBR) — Executor da linguagem</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #06121a;
+      --surface: #0a1a24;
+      --border: #1b3846;
+      --text: #e9f4f6;
+      --muted: #93afbc;
+      --green: #19c37d;
+      --green-bright: #3be3a4;
+      --yellow: #ffcc4d;
+      --blue: #4fa8ff;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background: radial-gradient(circle at 20% 0%, #0d2a24 0%, #06121a 45%, #040c12 100%);
+      color: var(--text);
+      font-family: Inter, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      overflow: hidden;
+    }
+
+    #cbr-splash {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      transition: opacity 320ms ease;
+      z-index: 10;
+    }
+
+    #cbr-splash img {
+      width: 96px;
+      height: 96px;
+      border-radius: 24px;
+      box-shadow: 0 18px 48px rgba(25, 195, 125, 0.28);
+      animation: cbr-float 2.6s ease-in-out infinite;
+    }
+
+    #cbr-splash h1 {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.4px;
+    }
+
+    #cbr-splash h1 span {
+      color: var(--green-bright);
+      font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: 0.6px;
+    }
+
+    #cbr-splash p {
+      margin: 0;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .cbr-bar {
+      width: 180px;
+      height: 3px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: var(--border);
+    }
+
+    .cbr-bar::after {
+      content: "";
+      display: block;
+      width: 40%;
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--green), var(--blue), var(--yellow));
+      animation: cbr-slide 1.35s ease-in-out infinite;
+    }
+
+    @keyframes cbr-slide {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(350%); }
+    }
+
+    @keyframes cbr-float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
+    }
+
+    body.cbr-ready #cbr-splash {
+      opacity: 0;
+      pointer-events: none;
+    }
+  </style>
 </head>
 <body>
+  <div id="cbr-splash">
+    <img src="icons/Icon-192.png" alt="C Brasil">
+    <h1>C Brasil <span>(CBR)</span></h1>
+    <div class="cbr-bar"></div>
+    <p>carregando o executor…</p>
+  </div>
+
   <script src="flutter_bootstrap.js" async></script>
+  <script>
+    window.addEventListener('flutter-first-frame', function () {
+      document.body.classList.add('cbr-ready');
+      setTimeout(function () {
+        var splash = document.getElementById('cbr-splash');
+        if (splash) splash.remove();
+      }, 400);
+    });
+  </script>
 </body>
 </html>

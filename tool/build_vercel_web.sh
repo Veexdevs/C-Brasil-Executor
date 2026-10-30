@@ -16,8 +16,8 @@ if ! command -v flutter >/dev/null 2>&1; then
 fi
 
 flutter config --no-analytics
+flutter config --enable-web
 flutter --version
-flutter create --platforms=web --project-name=c_brasil_executor .
 flutter pub get
 
 UPSTREAM_SHA="${CBR_UPSTREAM_COMMIT:-}"

@@ -1,0 +1,99 @@
+name: Sincronizar com a linguagem oficial
+
+on:
+  schedule:
+    - cron: '17 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: upstream-sync
+  cancel-in-progress: false
+
+jobs:
+  sincronizar:
+    name: Conferir vorgweb/C-Brasil
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Ler o commit atual do compilador oficial
+        id: upstream
+        run: |
+          set -euo pipefail
+          SHA="$(git ls-remote https://github.com/vorgweb/C-Brasil.git refs/heads/main | cut -f1)"
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          echo "Linguagem oficial em $SHA"
+
+      - name: Comparar com o commit registrado
+        id: compare
+        run: |
+          set -euo pipefail
+          CURRENT="$(python3 -c "import json;print(json.load(open('.github/upstream.json'))['commit'])")"
+          echo "Registrado: $CURRENT"
+          if [ "$CURRENT" = "${{ steps.upstream.outputs.sha }}" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Conferir se o executor acompanha a linguagem
+        if: steps.compare.outputs.changed == 'true'
+        id: conformidade
+        continue-on-error: true
+        run: bash tool/conformance/verify_upstream.sh
+
+      - name: Registrar o novo commit
+        if: steps.compare.outputs.changed == 'true' && steps.conformidade.outcome == 'success'
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path('.github/upstream.json')
+          data = json.loads(path.read_text(encoding='utf-8'))
+          data['commit'] = '${{ steps.upstream.outputs.sha }}'
+          data['updated_at'] = '${{ github.run_id }}'
+          path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
+          PY
+          git config user.name "C Brasil Bot"
+          git config user.email "cbr-bot@users.noreply.github.com"
+          git add .github/upstream.json
+          git commit -m "chore: sincronizar com a linguagem Cbr ${{ steps.upstream.outputs.sha }}"
+          git push origin HEAD:main
+
+      - name: Abrir issue quando a linguagem muda de comportamento
+        if: steps.compare.outputs.changed == 'true' && steps.conformidade.outcome == 'failure'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const sha = '${{ steps.upstream.outputs.sha }}';
+            const title = `Linguagem atualizada em vorgweb/C-Brasil: ${sha.slice(0, 7)}`;
+            const existing = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'upstream',
+            });
+            if (existing.data.some((issue) => issue.title === title)) return;
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              labels: ['upstream'],
+              body: [
+                `O compilador oficial mudou para \`${sha}\` e a suíte de conformidade do executor divergiu.`,
+                '',
+                'Passos para atualizar:',
+                '',
+                '1. Rode `CBR_UPDATE_GOLDENS=1 bash tool/conformance/update_goldens.sh` para regravar as saídas oficiais.',
+                '2. Ajuste o interpretador em `lib/cbr/src` até `flutter test` passar.',
+                '3. Envie o commit com `[dist]` no título para publicar a nova versão.',
+              ].join('\n'),
+            });
