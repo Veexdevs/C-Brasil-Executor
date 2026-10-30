@@ -30,7 +30,7 @@ class _ExamplesPageState extends State<ExamplesPage> {
         children: [
           Row(
             children: [
-              const Icon(Icons.widgets_outlined, color: CbrColors.yellow, size: 22),
+              const Icon(Icons.widgets_outlined, color: Colors.white, size: 22),
               const SizedBox(width: 10),
               Text('Exemplos', style: CbrTextStyles.headline.copyWith(fontSize: 26)),
             ],
@@ -132,13 +132,6 @@ class _ExamplesPageState extends State<ExamplesPage> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  example.description,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: CbrTextStyles.bodyMuted.copyWith(fontSize: 12),
-                ),
               ],
             ),
           ),
@@ -170,12 +163,18 @@ class _ExamplesPageState extends State<ExamplesPage> {
                 if (example.usesInput)
                   const Tooltip(
                     message: 'O programa pede uma entrada',
-                    child: Icon(Icons.keyboard_rounded,
-                        size: 15, color: CbrColors.yellow),
+                    child: Icon(
+                      Icons.keyboard_rounded,
+                      size: 15,
+                      color: Colors.white,
+                    ),
                   )
                 else
-                  Icon(Icons.terminal_rounded,
-                      size: 15, color: CbrColors.textFaint),
+                  const Icon(
+                    Icons.terminal_rounded,
+                    size: 15,
+                    color: Colors.white,
+                  ),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(

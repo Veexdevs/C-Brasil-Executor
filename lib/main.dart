@@ -9,7 +9,6 @@ import 'screens/executor_page.dart';
 import 'state/executor_state.dart';
 import 'theme/cbr_theme.dart';
 import 'widgets/cbr_logo.dart';
-import 'widgets/settings_dialog.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,8 +36,6 @@ class CbrApp extends StatefulWidget {
 class _CbrAppState extends State<CbrApp> {
   final ExecutorState _state = ExecutorState();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  final GlobalKey<ScaffoldMessengerState> _messengerKey =
-      GlobalKey<ScaffoldMessengerState>();
 
   CbrPage _page = CbrPage.executor;
   Timer? _saveTimer;
@@ -67,31 +64,14 @@ class _CbrAppState extends State<CbrApp> {
     super.dispose();
   }
 
-  void _snack(String message) {
-    _messengerKey.currentState?.showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.check_circle_outline_rounded, size: 17, color: CbrColors.green),
-            const SizedBox(width: 10),
-            Expanded(child: Text(message)),
-          ],
-        ),
-        duration: const Duration(seconds: 3),
-      ),
-    );
-  }
-
   void _openExample(CbrExample example) {
     _state.loadProgram(example.code, name: example.filename);
     setState(() => _page = CbrPage.executor);
-    _snack('Exemplo carregado.');
   }
 
   void _tryCode(String code) {
     _state.loadProgram(code, name: 'main.cbr', markAsDirty: true);
     setState(() => _page = CbrPage.executor);
-    _snack('Código carregado no editor.');
   }
 
   void _go(CbrPage page) {
@@ -102,10 +82,9 @@ class _CbrAppState extends State<CbrApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'C Brasil (cbr)',
+      title: 'C Brasil',
       debugShowCheckedModeBanner: false,
       theme: buildCbrTheme(),
-      scaffoldMessengerKey: _messengerKey,
       home: Builder(
         builder: (homeContext) => Scaffold(
           key: _scaffoldKey,
@@ -121,11 +100,10 @@ class _CbrAppState extends State<CbrApp> {
                     page: _page,
                     onSelected: _go,
                     onMenu: () => _scaffoldKey.currentState?.openDrawer(),
-                    onSettings: () => SettingsDialog.show(homeContext, _state),
                   ),
                   Expanded(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+                      padding: EdgeInsets.zero,
                       child: _body(),
                     ),
                   ),
@@ -166,13 +144,11 @@ class _Header extends StatelessWidget {
     required this.page,
     required this.onSelected,
     required this.onMenu,
-    required this.onSettings,
   });
 
   final CbrPage page;
   final ValueChanged<CbrPage> onSelected;
   final VoidCallback onMenu;
-  final VoidCallback onSettings;
 
   @override
   Widget build(BuildContext context) {
@@ -181,7 +157,7 @@ class _Header extends StatelessWidget {
         final compact = constraints.maxWidth < 760;
         final medium = constraints.maxWidth < 1080;
         return Container(
-          padding: EdgeInsets.fromLTRB(compact ? 12 : 20, 10, compact ? 12 : 20, 10),
+          padding: EdgeInsets.fromLTRB(compact ? 4 : 12, 4, compact ? 4 : 12, 4),
           decoration: const BoxDecoration(
             color: CbrColors.surface,
             border: Border(bottom: BorderSide(color: CbrColors.border, width: 0.8)),
@@ -191,13 +167,13 @@ class _Header extends StatelessWidget {
               if (compact) ...[
                 IconButton(
                   onPressed: onMenu,
-                  icon: const Icon(Icons.menu_rounded, color: CbrColors.textMuted),
+                  icon: const Icon(Icons.menu_rounded, color: Colors.white),
                   tooltip: 'Menu',
                 ),
                 const SizedBox(width: 2),
               ],
               CbrWordmark(
-                logoSize: compact ? 30 : 36,
+                logoSize: compact ? 28 : 32,
                 onTap: () => onSelected(CbrPage.executor),
               ),
               if (!compact) ...[
@@ -206,11 +182,6 @@ class _Header extends StatelessWidget {
                 const SizedBox(width: 8),
               ] else
                 const Spacer(),
-              IconButton(
-                onPressed: onSettings,
-                icon: const Icon(Icons.tune_rounded, size: 19, color: CbrColors.textMuted),
-                tooltip: 'Preferências',
-              ),
             ],
           ),
         );
@@ -251,7 +222,7 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? CbrColors.greenBright : CbrColors.textMuted;
+    final textColor = selected ? CbrColors.greenBright : CbrColors.textMuted;
     return Padding(
       padding: const EdgeInsets.only(right: 4),
       child: InkWell(
@@ -269,14 +240,14 @@ class _NavItem extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(page.icon, size: 15, color: color),
+              Icon(page.icon, size: 15, color: Colors.white),
               const SizedBox(width: 7),
               Text(
                 page.label,
                 style: CbrTextStyles.body.copyWith(
                   fontSize: 12.5,
                   fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                  color: color,
+                  color: textColor,
                 ),
               ),
             ],
@@ -315,7 +286,7 @@ class _Drawer extends StatelessWidget {
                 leading: Icon(
                   item.icon,
                   size: 18,
-                  color: item == current ? CbrColors.greenBright : CbrColors.textMuted,
+                  color: Colors.white,
                 ),
                 title: Text(
                   item.label,
@@ -326,7 +297,7 @@ class _Drawer extends StatelessWidget {
                   ),
                 ),
                 trailing: item == current
-                    ? const Icon(Icons.chevron_right_rounded, color: CbrColors.green)
+                    ? const Icon(Icons.chevron_right_rounded, color: Colors.white)
                     : null,
               ),
           ],

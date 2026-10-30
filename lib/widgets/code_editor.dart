@@ -10,7 +10,7 @@ import 'highlighted_text.dart';
 class CbrEditingController extends TextEditingController {
   CbrEditingController({super.text});
 
-  double fontSize = 14;
+  double fontSize = 16;
   int? highlightLine;
 
   String? _cacheKey;
