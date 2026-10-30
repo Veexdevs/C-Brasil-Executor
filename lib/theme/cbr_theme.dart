@@ -2,45 +2,38 @@ import 'package:flutter/material.dart';
 
 import '../cbr/cbr.dart';
 
-/// Paleta do C Brasil: verde, amarelo e azul sobre um fundo profundo.
+/// Paleta do C Brasil em preto, com verde vivo.
 abstract final class CbrColors {
-  static const Color background = Color(0xFF06121A);
-  static const Color backgroundDeep = Color(0xFF040C12);
-  static const Color surface = Color(0xFF0A1A24);
-  static const Color surfaceAlt = Color(0xFF0E2330);
-  static const Color surfaceRaised = Color(0xFF122B39);
-  static const Color border = Color(0xFF1B3846);
-  static const Color borderStrong = Color(0xFF265062);
+  static const Color background = Color(0xFF000000);
+  static const Color backgroundDeep = Color(0xFF000000);
+  static const Color surface = Color(0xFF000000);
+  static const Color surfaceAlt = Color(0xFF000000);
+  static const Color surfaceRaised = Color(0xFF111111);
+  static const Color border = Color(0xFF252525);
+  static const Color borderStrong = Color(0xFF3A3A3A);
 
-  static const Color text = Color(0xFFE9F4F6);
-  static const Color textMuted = Color(0xFF93AFBC);
-  static const Color textFaint = Color(0xFF5F7B88);
+  static const Color text = Color(0xFFF5F5F5);
+  static const Color textMuted = Color(0xFFA6A6A6);
+  static const Color textFaint = Color(0xFF777777);
 
-  static const Color green = Color(0xFF19C37D);
-  static const Color greenBright = Color(0xFF3BE3A4);
-  static const Color greenDeep = Color(0xFF0B6B49);
-  static const Color yellow = Color(0xFFFFCC4D);
-  static const Color yellowSoft = Color(0xFFFFE08A);
+  static const Color green = Color(0xFF00E676);
+  static const Color greenBright = Color(0xFF00FF66);
+  static const Color greenDeep = Color(0xFF00A344);
+  static const Color yellow = Color(0xFFFFD600);
+  static const Color yellowSoft = Color(0xFFFFEA70);
   static const Color blue = Color(0xFF4FA8FF);
   static const Color blueDeep = Color(0xFF1B5C99);
 
   static const Color codeText = Color(0xFFDBEDF2);
   static const Color codeKeyword = Color(0xFF6CBBFF);
-  static const Color codeType = Color(0xFF3BE3A4);
+  static const Color codeType = Color(0xFF00FF66);
   static const Color codeBuiltin = Color(0xFFFFD166);
   static const Color codeFunction = Color(0xFFBFE3FF);
   static const Color codeString = Color(0xFFE6C86E);
   static const Color codeNumber = Color(0xFF80C8FF);
   static const Color codeComment = Color(0xFF5F7B88);
   static const Color codeOperator = Color(0xFF7FA7B8);
-  static const Color codeMarker = Color(0xFF3BE3A4);
-
-  static const LinearGradient brandGradient = LinearGradient(
-    colors: [green, greenBright],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-  );
-
+  static const Color codeMarker = Color(0xFF00FF66);
 }
 
 /// Fontes monoespaçadas com fallback para todas as plataformas.
@@ -168,10 +161,14 @@ ThemeData buildCbrTheme() {
     brightness: Brightness.dark,
     colorScheme: scheme,
     scaffoldBackgroundColor: CbrColors.background,
+    iconTheme: const IconThemeData(color: Colors.white),
+    iconButtonTheme: IconButtonThemeData(
+      style: IconButton.styleFrom(foregroundColor: Colors.white),
+    ),
     fontFamily: 'Inter',
     fontFamilyFallback: kSansFallback,
     dividerColor: CbrColors.border,
-    splashFactory: InkSparkle.splashFactory,
+    splashFactory: InkRipple.splashFactory,
     textTheme: const TextTheme(
       headlineLarge: CbrTextStyles.headline,
       titleMedium: CbrTextStyles.title,
@@ -196,7 +193,7 @@ ThemeData buildCbrTheme() {
     ),
     textSelectionTheme: const TextSelectionThemeData(
       cursorColor: CbrColors.greenBright,
-      selectionColor: Color(0x552ACB8C),
+      selectionColor: Color(0x5500FF66),
       selectionHandleColor: CbrColors.green,
     ),
     inputDecorationTheme: InputDecorationTheme(

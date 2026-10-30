@@ -19,21 +19,16 @@ class ExecutorPage extends StatefulWidget {
 }
 
 class _ExecutorPageState extends State<ExecutorPage> {
-  int _lastCaretLine = 1;
-  int _lastCaretColumn = 1;
-
   @override
   void initState() {
     super.initState();
     widget.state.addListener(_onStateChanged);
-    widget.state.controller.addListener(_onCaretMoved);
     widget.state.inputHandler = _askInput;
   }
 
   @override
   void dispose() {
     widget.state.removeListener(_onStateChanged);
-    widget.state.controller.removeListener(_onCaretMoved);
     if (widget.state.inputHandler == _askInput) {
       widget.state.inputHandler = null;
     }
@@ -42,23 +37,6 @@ class _ExecutorPageState extends State<ExecutorPage> {
 
   void _onStateChanged() {
     if (mounted) setState(() {});
-  }
-
-  void _onCaretMoved() {
-    final selection = widget.state.controller.selection;
-    final offset = selection.baseOffset;
-    if (offset < 0) return;
-    final text = widget.state.controller.text;
-    final safeOffset = offset.clamp(0, text.length);
-    final before = text.substring(0, safeOffset);
-    final line = '\n'.allMatches(before).length + 1;
-    final column = safeOffset - before.lastIndexOf('\n');
-    if (line != _lastCaretLine || column != _lastCaretColumn) {
-      setState(() {
-        _lastCaretLine = line;
-        _lastCaretColumn = column;
-      });
-    }
   }
 
   Future<String> _askInput(String prompt) async {
@@ -71,7 +49,7 @@ class _ExecutorPageState extends State<ExecutorPage> {
         return AlertDialog(
           title: Row(
             children: [
-              const Icon(Icons.keyboard_alt_outlined, color: CbrColors.green),
+              const Icon(Icons.keyboard_alt_outlined, color: Colors.white),
               const SizedBox(width: 10),
               Text(
                 'O programa pediu uma entrada',
@@ -133,7 +111,7 @@ class _ExecutorPageState extends State<ExecutorPage> {
             Icon(
               error ? Icons.error_outline_rounded : Icons.check_circle_outline_rounded,
               size: 17,
-              color: error ? CbrColors.yellow : CbrColors.green,
+              color: Colors.white,
             ),
             const SizedBox(width: 10),
             Expanded(child: Text(message)),
@@ -183,18 +161,18 @@ class _ExecutorPageState extends State<ExecutorPage> {
           return Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Expanded(flex: 58, child: _editorPanel(state, true)),
-              const SizedBox(width: 16),
-              Expanded(flex: 42, child: _console(state, true)),
+              Expanded(flex: 64, child: _editorPanel(state, true)),
+              const SizedBox(width: 6),
+              Expanded(flex: 36, child: _console(state, true)),
             ],
           );
         }
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Expanded(flex: 56, child: _editorPanel(state, false)),
-            const SizedBox(height: 12),
-            Expanded(flex: 44, child: _console(state, false)),
+            Expanded(flex: 62, child: _editorPanel(state, false)),
+            const SizedBox(height: 6),
+            Expanded(flex: 38, child: _console(state, false)),
           ],
         );
       },
@@ -202,11 +180,10 @@ class _ExecutorPageState extends State<ExecutorPage> {
   }
 
   Widget _editorPanel(ExecutorState state, bool wide) {
-    final lineCount = state.controller.text.split('\n').length;
     return CbrPanel(
       padding: EdgeInsets.zero,
-      radius: 14,
-      color: CbrColors.surface,
+      radius: 6,
+      color: CbrColors.background,
       clip: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -216,47 +193,11 @@ class _ExecutorPageState extends State<ExecutorPage> {
           Expanded(
             child: CbrCodeEditor(
               controller: state.controller,
-              fontSize: state.fontSize,
+              fontSize: 16.0,
               highlightLine: state.highlightedLine,
               onRun: state.run,
               onSave: _saveFile,
               onOpen: _openFile,
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-            decoration: const BoxDecoration(
-              color: CbrColors.backgroundDeep,
-              border: Border(top: BorderSide(color: CbrColors.border, width: 0.8)),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.circle, size: 6, color: CbrColors.green),
-                const SizedBox(width: 6),
-                Text(
-                  'UTF-8',
-                  style: CbrTextStyles.label.copyWith(fontSize: 10),
-                ),
-                const SizedBox(width: 14),
-                Text(
-                  'Ln $_lastCaretLine, Col $_lastCaretColumn',
-                  style: CbrTextStyles.label.copyWith(fontSize: 10),
-                ),
-                const Spacer(),
-                if (wide)
-                  Flexible(
-                    child: Text(
-                      'Ctrl+Enter executa • Ctrl+S salva',
-                      overflow: TextOverflow.ellipsis,
-                      style: CbrTextStyles.label.copyWith(fontSize: 10),
-                    ),
-                  ),
-                const SizedBox(width: 12),
-                Text(
-                  '$lineCount linhas',
-                  style: CbrTextStyles.label.copyWith(fontSize: 10),
-                ),
-              ],
             ),
           ),
         ],
@@ -333,7 +274,7 @@ class _ExecutorPageState extends State<ExecutorPage> {
                       child: Row(
                         children: [
                           const Icon(Icons.library_books_outlined,
-                              size: 15, color: CbrColors.blue),
+                              size: 15, color: Colors.white),
                           const SizedBox(width: 10),
                           Flexible(
                             child: Text(
@@ -354,7 +295,7 @@ class _ExecutorPageState extends State<ExecutorPage> {
                     color: CbrColors.surface,
                   ),
                   child: const Icon(Icons.library_books_outlined,
-                      size: 16, color: CbrColors.blue),
+                      size: 16, color: Colors.white),
                 ),
               ),
               const SizedBox(width: 8),
@@ -385,7 +326,7 @@ class _ExecutorPageState extends State<ExecutorPage> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.description_outlined, size: 14, color: CbrColors.greenBright),
+          const Icon(Icons.description_outlined, size: 14, color: Colors.white),
           const SizedBox(width: 7),
           Flexible(
             child: ConstrainedBox(
@@ -407,7 +348,7 @@ class _ExecutorPageState extends State<ExecutorPage> {
               width: 6,
               height: 6,
               decoration: const BoxDecoration(
-                color: CbrColors.yellow,
+                color: Colors.white,
                 shape: BoxShape.circle,
               ),
             ),

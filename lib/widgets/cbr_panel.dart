@@ -8,7 +8,7 @@ class CbrPanel extends StatelessWidget {
     super.key,
     required this.child,
     this.padding = const EdgeInsets.all(20),
-    this.radius = 16,
+    this.radius = 8,
     this.color,
     this.borderColor,
     this.gradient,
@@ -33,13 +33,6 @@ class CbrPanel extends StatelessWidget {
         gradient: gradient,
         borderRadius: BorderRadius.circular(radius),
         border: Border.all(color: borderColor ?? CbrColors.border),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x33000000),
-            blurRadius: 24,
-            offset: Offset(0, 12),
-          ),
-        ],
       ),
       child: child,
     );
@@ -115,7 +108,7 @@ class CbrChip extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (icon != null) ...[
-            Icon(icon, size: 12, color: color),
+            Icon(icon, size: 12, color: Colors.white),
             const SizedBox(width: 5),
           ],
           Text(
@@ -137,7 +130,7 @@ class CbrChip extends StatelessWidget {
   }
 }
 
-/// Botão principal (gradiente verde) e variações usadas nas barras.
+/// Botão principal e variações usadas nas barras.
 class CbrButton extends StatelessWidget {
   const CbrButton({
     super.key,
@@ -168,10 +161,10 @@ class CbrButton extends StatelessWidget {
           const SizedBox(
             width: 14,
             height: 14,
-            child: CircularProgressIndicator(strokeWidth: 2, color: CbrColors.text),
+            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
           )
         else if (icon != null)
-          Icon(icon, size: compact ? 16 : 17),
+          Icon(icon, size: compact ? 16 : 17, color: Colors.white),
         if ((icon != null || busy) && !compact) const SizedBox(width: 8),
         if (!compact)
           Text(
@@ -182,7 +175,7 @@ class CbrButton extends StatelessWidget {
               fontSize: 13,
               fontWeight: FontWeight.w600,
               color: variant == CbrButtonVariant.primary
-                  ? const Color(0xFF04231A)
+                  ? CbrColors.greenBright
                   : CbrColors.text,
             ),
           ),
@@ -192,26 +185,19 @@ class CbrButton extends StatelessWidget {
     final button = switch (variant) {
       CbrButtonVariant.primary => DecoratedBox(
           decoration: BoxDecoration(
-            gradient: enabled ? CbrColors.brandGradient : null,
-            color: enabled ? null : CbrColors.surfaceRaised,
-            borderRadius: BorderRadius.circular(10),
-            boxShadow: enabled
-                ? [
-                    BoxShadow(
-                      color: CbrColors.green.withValues(alpha: 0.28),
-                      blurRadius: 18,
-                      offset: const Offset(0, 6),
-                    ),
-                  ]
-                : null,
+            color: CbrColors.surfaceRaised,
+            border: Border.all(
+              color: enabled ? CbrColors.greenBright : CbrColors.border,
+            ),
+            borderRadius: BorderRadius.circular(6),
           ),
           child: TextButton(
             onPressed: enabled ? onPressed : null,
             style: TextButton.styleFrom(
               padding: EdgeInsets.symmetric(horizontal: compact ? 10 : 16, vertical: 12),
               minimumSize: const Size(0, 40),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              foregroundColor: const Color(0xFF04231A),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+              foregroundColor: CbrColors.greenBright,
             ),
             child: child,
           ),
@@ -224,7 +210,7 @@ class CbrButton extends StatelessWidget {
             side: const BorderSide(color: CbrColors.border),
             backgroundColor: CbrColors.surfaceAlt,
             foregroundColor: CbrColors.text,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
           ),
           child: child,
         ),
@@ -234,7 +220,7 @@ class CbrButton extends StatelessWidget {
             padding: EdgeInsets.symmetric(horizontal: compact ? 10 : 12, vertical: 12),
             minimumSize: const Size(0, 38),
             foregroundColor: CbrColors.textMuted,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
           ),
           child: child,
         ),
@@ -246,7 +232,7 @@ class CbrButton extends StatelessWidget {
             side: BorderSide(color: CbrColors.yellow.withValues(alpha: 0.5)),
             backgroundColor: CbrColors.yellow.withValues(alpha: 0.1),
             foregroundColor: CbrColors.yellow,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
           ),
           child: child,
         ),
@@ -279,7 +265,7 @@ class SectionHeader extends StatelessWidget {
         Row(
           children: [
             if (icon != null) ...[
-              Icon(icon, size: 18, color: CbrColors.greenBright),
+              Icon(icon, size: 18, color: Colors.white),
               const SizedBox(width: 8),
             ],
             Flexible(

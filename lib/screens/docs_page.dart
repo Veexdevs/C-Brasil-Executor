@@ -76,7 +76,7 @@ class _DocsPageState extends State<DocsPage> {
   Widget _header() {
     return Row(
       children: [
-        const Icon(Icons.menu_book_rounded, color: CbrColors.greenBright, size: 22),
+        const Icon(Icons.menu_book_rounded, color: Colors.white, size: 22),
         const SizedBox(width: 10),
         Text('Documentação', style: CbrTextStyles.headline.copyWith(fontSize: 26)),
       ],
@@ -138,7 +138,7 @@ class _DocsPageState extends State<DocsPage> {
               Icon(
                 icon,
                 size: 14,
-                color: selected ? CbrColors.greenBright : CbrColors.textMuted,
+                color: Colors.white,
               ),
               const SizedBox(width: 8),
               Flexible(
@@ -175,7 +175,7 @@ class _DocsPageState extends State<DocsPage> {
                   borderRadius: BorderRadius.circular(9),
                   border: Border.all(color: CbrColors.green.withValues(alpha: 0.25)),
                 ),
-                child: Icon(section.icon, size: 16, color: CbrColors.greenBright),
+                child: Icon(section.icon, size: 16, color: Colors.white),
               ),
               const SizedBox(width: 12),
               Flexible(
@@ -227,7 +227,7 @@ class _DocsPageState extends State<DocsPage> {
                   children: [
                     const Padding(
                       padding: EdgeInsets.only(top: 7, right: 10),
-                      child: Icon(Icons.circle, size: 5, color: CbrColors.green),
+                      child: Icon(Icons.circle, size: 5, color: Colors.white),
                     ),
                     Expanded(
                       child: Text(
@@ -250,7 +250,7 @@ class _DocsPageState extends State<DocsPage> {
                 alignment: Alignment.centerRight,
                 child: TextButton.icon(
                   onPressed: () => widget.onTryCode!(code),
-                  icon: const Icon(Icons.play_arrow_rounded, size: 15),
+                  icon: const Icon(Icons.play_arrow_rounded, size: 15, color: Colors.white),
                   label: const Text('Testar este exemplo'),
                   style: TextButton.styleFrom(
                     foregroundColor: CbrColors.greenBright,

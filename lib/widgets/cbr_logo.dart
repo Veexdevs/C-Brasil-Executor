@@ -24,7 +24,7 @@ class CbrLogo extends StatelessWidget {
   }
 }
 
-/// Brand lockup: logo followed by “C Brasil (cbr)”.
+/// Lockup: logo followed by “C Brasil”.
 class CbrWordmark extends StatelessWidget {
   const CbrWordmark({super.key, this.logoSize = 40, this.onTap});
 
@@ -33,40 +33,21 @@ class CbrWordmark extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final titleSize = logoSize * 0.45;
     final content = Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         CbrLogo(size: logoSize),
         SizedBox(width: logoSize * 0.3),
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.baseline,
-          textBaseline: TextBaseline.alphabetic,
-          children: [
-            Text(
-              'C Brasil',
-              style: TextStyle(
-                fontFamily: 'Inter',
-                fontFamilyFallback: kSansFallback,
-                fontSize: titleSize,
-                fontWeight: FontWeight.w700,
-                letterSpacing: -0.35,
-                color: CbrColors.text,
-              ),
-            ),
-            const SizedBox(width: 5),
-            Text(
-              '(cbr)',
-              style: TextStyle(
-                fontFamily: 'monospace',
-                fontFamilyFallback: kMonoFallback,
-                fontSize: titleSize * 0.66,
-                fontWeight: FontWeight.w600,
-                color: CbrColors.greenBright,
-              ),
-            ),
-          ],
+        Text(
+          'C Brasil',
+          style: TextStyle(
+            fontFamily: 'Inter',
+            fontFamilyFallback: kSansFallback,
+            fontSize: logoSize * 0.5,
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.35,
+            color: CbrColors.text,
+          ),
         ),
       ],
     );
@@ -74,7 +55,7 @@ class CbrWordmark extends StatelessWidget {
     if (onTap == null) return content;
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(8),
       child: Padding(padding: const EdgeInsets.all(2), child: content),
     );
   }

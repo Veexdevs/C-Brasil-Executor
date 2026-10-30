@@ -1,10 +1,10 @@
 {
-  "name": "C Brasil (cbr)",
+  "name": "C Brasil",
   "short_name": "C Brasil",
   "start_url": ".",
   "display": "standalone",
-  "background_color": "#06121A",
-  "theme_color": "#06121A",
+  "background_color": "#000000",
+  "theme_color": "#000000",
   "orientation": "any",
   "prefer_related_applications": false,
   "icons": [

@@ -1,4 +1,4 @@
-# C Brasil (cbr)
+# C Brasil
 
 Editor e executor da linguagem C Brasil, desenvolvido em Dart e Flutter. O interpretador roda localmente no app; o código do usuário não é enviado para um servidor.
 

@@ -60,23 +60,20 @@ class _ConsolePanelState extends State<ConsolePanel> {
     final state = widget.state;
     return CbrPanel(
       padding: EdgeInsets.zero,
-      radius: 14,
-      color: CbrColors.backgroundDeep,
+      radius: 6,
+      color: CbrColors.background,
+      clip: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _header(state),
           Container(height: 1, color: CbrColors.border),
           Expanded(
-            child: ClipRRect(
-              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(14)),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(14, 12, 8, 8),
-                child: _body(state),
-              ),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(14, 12, 8, 8),
+              child: _body(state),
             ),
           ),
-          _footer(state),
         ],
       ),
     );
@@ -84,10 +81,10 @@ class _ConsolePanelState extends State<ConsolePanel> {
 
   Widget _header(ExecutorState state) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 10, 10, 10),
+      padding: const EdgeInsets.fromLTRB(12, 6, 8, 6),
       child: Row(
         children: [
-          const Icon(Icons.terminal_rounded, size: 16, color: CbrColors.greenBright),
+          const Icon(Icons.terminal_rounded, size: 16, color: Colors.white),
           const SizedBox(width: 8),
           Text('Console', style: CbrTextStyles.title.copyWith(fontSize: 13.5)),
           const Spacer(),
@@ -115,15 +112,8 @@ class _ConsolePanelState extends State<ConsolePanel> {
   }
 
   Widget _body(ExecutorState state) {
-    final hasOutput = state.output.isNotEmpty;
-    final hasError = state.errorMessage != null;
-    if (!hasOutput && !hasError && !state.running) {
-      return Center(
-        child: Text(
-          'A saída aparecerá aqui.',
-          style: CbrTextStyles.bodyMuted,
-        ),
-      );
+    if (state.output.isEmpty && state.errorMessage == null && !state.running) {
+      return const SizedBox.expand();
     }
 
     return SingleChildScrollView(
@@ -136,34 +126,22 @@ class _ConsolePanelState extends State<ConsolePanel> {
               TextSpan(
                 text: state.output,
                 style: CbrTextStyles.mono.copyWith(
-                  fontSize: 13.5,
-                  height: 1.65,
+                  fontSize: 15,
+                  height: 1.6,
                   color: CbrColors.codeText,
                 ),
               ),
             ),
           if (state.running)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Row(
-                children: [
-                  const SizedBox(
-                    width: 12,
-                    height: 12,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: CbrColors.greenBright,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'executando…',
-                    style: CbrTextStyles.mono.copyWith(
-                      fontSize: 12,
-                      color: CbrColors.textMuted,
-                    ),
-                  ),
-                ],
+            const Padding(
+              padding: EdgeInsets.only(top: 8),
+              child: SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: CbrColors.greenBright,
+                ),
               ),
             ),
           if (state.errorMessage != null) _errorCard(state.errorMessage!),
@@ -178,91 +156,26 @@ class _ConsolePanelState extends State<ConsolePanel> {
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
       decoration: BoxDecoration(
         color: CbrColors.yellow.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(6),
         border: Border.all(color: CbrColors.yellow.withValues(alpha: 0.35)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.error_outline_rounded, size: 16, color: CbrColors.yellow),
+          const Icon(Icons.error_outline_rounded, size: 16, color: Colors.white),
           const SizedBox(width: 8),
           Expanded(
             child: SelectableText(
               message,
               style: CbrTextStyles.mono.copyWith(
-                fontSize: 12.5,
-                height: 1.55,
+                fontSize: 13.5,
+                height: 1.5,
                 color: CbrColors.yellowSoft,
               ),
             ),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _footer(ExecutorState state) {
-    Widget leading;
-    if (state.running) {
-      leading = Row(
-        children: [
-          const SizedBox(
-            width: 8,
-            height: 8,
-            child: CircularProgressIndicator(strokeWidth: 1.5, color: CbrColors.yellow),
-          ),
-          const SizedBox(width: 7),
-          Text(
-            'Executando o programa…',
-            style: CbrTextStyles.label.copyWith(color: CbrColors.yellow),
-          ),
-        ],
-      );
-    } else if (state.errorMessage != null) {
-      leading = Row(
-        children: [
-          const Icon(Icons.error_outline_rounded, size: 13, color: CbrColors.yellow),
-          const SizedBox(width: 6),
-          Flexible(
-            child: Text(
-              state.errorLine != null
-                  ? 'Erro na linha ${state.errorLine}.'
-                  : 'O programa terminou com erro.',
-              style: CbrTextStyles.label.copyWith(color: CbrColors.yellow),
-            ),
-          ),
-        ],
-      );
-    } else if (state.lastRunSucceeded && state.elapsed != null) {
-      final milliseconds = state.elapsed!.inMilliseconds;
-      leading = Row(
-        children: [
-          const Icon(Icons.check_circle_outline_rounded, size: 13, color: CbrColors.green),
-          const SizedBox(width: 6),
-          Flexible(
-            child: Text(
-              'Concluído • ${milliseconds < 1 ? '< 1' : milliseconds} ms',
-              overflow: TextOverflow.ellipsis,
-              style: CbrTextStyles.label.copyWith(color: CbrColors.green),
-            ),
-          ),
-        ],
-      );
-    } else {
-      leading = Text(
-        'Pronto para executar',
-        style: CbrTextStyles.label,
-      );
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-      decoration: const BoxDecoration(
-        color: CbrColors.surface,
-        border: Border(top: BorderSide(color: CbrColors.border, width: 0.8)),
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(14)),
-      ),
-      child: Row(children: [leading]),
     );
   }
 }

@@ -3,7 +3,6 @@ class CbrExample {
   const CbrExample({
     required this.id,
     required this.title,
-    required this.description,
     required this.filename,
     required this.code,
     this.dialect = CbrDialect.didatico,
@@ -12,7 +11,6 @@ class CbrExample {
 
   final String id;
   final String title;
-  final String description;
   final String filename;
   final String code;
   final CbrDialect dialect;
@@ -28,22 +26,8 @@ enum CbrDialect {
   final String label;
 }
 
-const String starterCode = '''// C Brasil (Cbr) — escreva, execute e veja o resultado
-inicio
+const String starterCode = '''inicio
     escreva("Olá, C Brasil!")
-    escreva("Esta é a sua primeira execução.")
-
-    inteiro idade = 18
-
-    se (idade >= 18) então
-        escreva("Você é maior de idade.")
-    senao
-        escreva("Você é menor de idade.")
-    fimse
-
-    para (inteiro i = 1; i <= 5; i = i + 1) faça
-        escreva("Contagem: ", i)
-    fimpara
 fim
 ''';
 
@@ -51,17 +35,12 @@ const List<CbrExample> cbrExamples = [
   CbrExample(
     id: 'primeiro',
     title: 'Primeiro programa',
-    description:
-        'O exemplo que abre o editor: texto, condição e laço com contagem.',
     filename: 'primeiro.cbr',
     code: starterCode,
   ),
   CbrExample(
     id: 'entrada',
     title: 'Ler dados do usuário',
-    description:
-        'O console pede os dados e o programa decide a mensagem final. '
-        'Use leia() ou scan().',
     filename: 'idade.cbr',
     usesInput: true,
     code: '''inicio
@@ -83,7 +62,6 @@ fim
   CbrExample(
     id: 'tabuada',
     title: 'Tabuada com laço',
-    description: 'Laço "para" clássico montando a tabuada de um número.',
     filename: 'tabuada.cbr',
     code: '''inicio
     inteiro numero = 7
@@ -98,8 +76,6 @@ fim
   CbrExample(
     id: 'aprovacao',
     title: 'Média e aprovação',
-    description:
-        'Notas, média decimal e condição composta com "e" (&&) e "ou" (||).',
     filename: 'media.cbr',
     code: '''inicio
     real nota1 = 7.5
@@ -122,8 +98,6 @@ fim
   CbrExample(
     id: 'funcoes',
     title: 'Funções e matemática',
-    description:
-        'Funções do programador, biblioteca matemática e formatação com printf.',
     filename: 'funcoes.cbr',
     code: '''function dobro(valor) {
     return valor * 2
@@ -150,8 +124,6 @@ end(0)
   CbrExample(
     id: 'vetores',
     title: 'Arrays heterogêneos',
-    description:
-        'Listas com tipos misturados, adicionar, remover, limpar e tamanho.',
     filename: 'arrays.cbr',
     code: '''itens = [10, "Cbr", true, 3.14, -5]
 vazio = []
@@ -176,8 +148,6 @@ end(0)
   CbrExample(
     id: 'texto',
     title: 'Biblioteca de texto',
-    description:
-        'juntar, maiusculas, minusculas, contem, subtexto e substituir.',
     filename: 'texto.cbr',
     code: '''nome = "Brasil"
 saudacao = juntar("Olá, ", nome)
@@ -201,7 +171,6 @@ end(0)
   CbrExample(
     id: 'switch',
     title: 'Escolha com switch',
-    description: 'Menu simples usando switch, case, default e break.',
     filename: 'menu.cbr',
     code: '''inicio
     inteiro opcao = 2
@@ -219,9 +188,6 @@ fim
   CbrExample(
     id: 'upstream',
     title: 'Cbr 1.0 original',
-    description:
-        'Programa no dialeto original do repositório vorgweb/C-Brasil, com '
-        'printf, scan, switch e for com range.',
     filename: 'cbr10.cbr',
     dialect: CbrDialect.original,
     usesInput: true,

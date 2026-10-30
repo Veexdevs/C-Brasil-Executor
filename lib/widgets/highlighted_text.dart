@@ -109,7 +109,7 @@ class CodeBlock extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.code_rounded, size: 14, color: CbrColors.greenBright),
+                  const Icon(Icons.code_rounded, size: 14, color: Colors.white),
                   const SizedBox(width: 8),
                   Flexible(
                     child: Text(
@@ -203,7 +203,7 @@ class _CopyButtonState extends State<_CopyButton> {
       },
       icon: Icon(
         _copied ? Icons.check_rounded : Icons.copy_rounded,
-        color: _copied ? CbrColors.greenBright : CbrColors.textFaint,
+        color: Colors.white,
       ),
     );
   }

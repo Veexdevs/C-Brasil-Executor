@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -13,23 +11,17 @@ class ExecutorState extends ChangeNotifier {
 
   static const _keyCode = 'cbr.code';
   static const _keyFilename = 'cbr.filename';
-  static const _keyFontSize = 'cbr.fontSize';
 
   final CbrEditingController controller = CbrEditingController(text: starterCode);
 
   String filename = 'main.cbr';
   bool dirty = false;
-  double fontSize = 14;
 
   bool running = false;
   bool cancelRequested = false;
   String output = '';
   String? errorMessage;
   int? errorLine;
-  int? exitCode;
-  Duration? elapsed;
-  int? steps;
-  bool lastRunSucceeded = true;
   int? highlightedLine;
 
   /// Chamado quando o programa pede uma entrada (`leia`/`scan`).
@@ -46,13 +38,11 @@ class ExecutorState extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       final saved = prefs.getString(_keyCode);
       final savedName = prefs.getString(_keyFilename);
-      final savedSize = prefs.getDouble(_keyFontSize);
       if (saved != null && saved.trim().isNotEmpty) {
         controller.text = saved;
         dirty = false;
       }
       if (savedName != null && savedName.isNotEmpty) filename = savedName;
-      if (savedSize != null) fontSize = savedSize.clamp(10, 28);
       _notify();
     } catch (_) {
       // Sem armazenamento local: seguimos com o exemplo padrão.
@@ -64,7 +54,6 @@ class ExecutorState extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_keyCode, controller.text);
       await prefs.setString(_keyFilename, filename);
-      await prefs.setDouble(_keyFontSize, fontSize);
     } catch (_) {
       // Persistência é opcional.
     }
@@ -76,12 +65,6 @@ class ExecutorState extends ChangeNotifier {
     _notify();
   }
 
-  void setFontSize(double value) {
-    fontSize = value.clamp(10, 28);
-    _notify();
-    unawaited(persist());
-  }
-
   void loadProgram(String code, {String? name, bool markAsDirty = false}) {
     controller.text = code;
     if (name != null) filename = name;
@@ -90,10 +73,6 @@ class ExecutorState extends ChangeNotifier {
     errorMessage = null;
     errorLine = null;
     highlightedLine = null;
-    exitCode = null;
-    elapsed = null;
-    steps = null;
-    lastRunSucceeded = true;
     _notify();
   }
 
@@ -107,10 +86,6 @@ class ExecutorState extends ChangeNotifier {
     errorMessage = null;
     errorLine = null;
     highlightedLine = null;
-    exitCode = null;
-    elapsed = null;
-    steps = null;
-    lastRunSucceeded = true;
     _notify();
   }
 
@@ -128,10 +103,6 @@ class ExecutorState extends ChangeNotifier {
     errorMessage = null;
     errorLine = null;
     highlightedLine = null;
-    exitCode = null;
-    elapsed = null;
-    steps = null;
-    lastRunSucceeded = true;
     _notify();
 
     final buffer = StringBuffer();
@@ -164,10 +135,6 @@ class ExecutorState extends ChangeNotifier {
         isCancelled: () => cancelRequested,
       );
       flush(force: true);
-      exitCode = result.exitCode;
-      elapsed = result.elapsed;
-      steps = result.steps;
-      lastRunSucceeded = result.exitCode == 0 && !result.cancelled;
       if (result.cancelled) {
         errorMessage = 'Execução interrompida por você.';
       } else if (result.exitCode != 0) {
@@ -178,12 +145,9 @@ class ExecutorState extends ChangeNotifier {
       errorMessage = error.formatted;
       errorLine = error.line;
       highlightedLine = error.line;
-      lastRunSucceeded = false;
-      exitCode = null;
     } catch (error) {
       flush(force: true);
       errorMessage = 'Falha inesperada no executor: $error';
-      lastRunSucceeded = false;
     } finally {
       running = false;
       _notify();
