@@ -95,6 +95,12 @@ def main() -> int:
         )
         print(f"FALHOU: {name}\n  {snippet}")
 
+    if failures and raw_noise:
+        tail = "\n".join(raw_noise[-40:])
+        if len(tail) > 1400:
+            tail = tail[-1400:]
+        print(f"::error title=Log bruto do flutter test::{escape(tail)}")
+
     print(f"flutter test: {len(names)} teste(s), {len(failures)} falha(s).")
     if process.returncode != 0:
         if not failures:
