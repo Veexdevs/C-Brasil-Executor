@@ -281,12 +281,12 @@ class _CbrHomeState extends State<CbrHome> {
 
   Future<void> _openFile() async {
     try {
-      final selection = await FilePicker.pickFiles(
+      final files = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: const ['cbr', 'txt'],
       );
-      if (selection == null || selection.files.isEmpty) return;
-      final file = selection.files.single;
+      if (files.isEmpty) return;
+      final file = files.single;
       final bytes = await file.readAsBytes();
       if (!mounted) return;
       setState(() {
