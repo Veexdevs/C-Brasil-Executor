@@ -87,7 +87,9 @@ void main() {
 }
 
 class CbrApp extends StatelessWidget {
-  const CbrApp({super.key});
+  const CbrApp({super.key, this.autoCheckUpstream = true});
+
+  final bool autoCheckUpstream;
 
   @override
   Widget build(BuildContext context) {
@@ -124,7 +126,7 @@ class CbrApp extends StatelessWidget {
           textStyle: TextStyle(color: _textPrimary),
         ),
       ),
-      home: const CbrHome(),
+      home: CbrHome(autoCheckUpstream: autoCheckUpstream),
     );
   }
 }
@@ -132,7 +134,9 @@ class CbrApp extends StatelessWidget {
 enum _AppPage { executor, documentation, examples, about }
 
 class CbrHome extends StatefulWidget {
-  const CbrHome({super.key});
+  const CbrHome({super.key, this.autoCheckUpstream = true});
+
+  final bool autoCheckUpstream;
 
   @override
   State<CbrHome> createState() => _CbrHomeState();
@@ -158,11 +162,13 @@ class _CbrHomeState extends State<CbrHome> {
     super.initState();
     _editorController = _SyntaxController(text: _starterProgram);
     _editorController.addListener(_onEditorChanged);
-    _upstreamStatus.refresh();
-    _upstreamTimer = Timer.periodic(
-      const Duration(minutes: 30),
-      (_) => _upstreamStatus.refresh(),
-    );
+    if (widget.autoCheckUpstream) {
+      _upstreamStatus.refresh();
+      _upstreamTimer = Timer.periodic(
+        const Duration(minutes: 30),
+        (_) => _upstreamStatus.refresh(),
+      );
+    }
   }
 
   void _onEditorChanged() {
