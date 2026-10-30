@@ -5,7 +5,6 @@ class CbrExample {
     required this.title,
     required this.filename,
     required this.code,
-    this.dialect = CbrDialect.didatico,
     this.usesInput = false,
   });
 
@@ -13,17 +12,7 @@ class CbrExample {
   final String title;
   final String filename;
   final String code;
-  final CbrDialect dialect;
   final bool usesInput;
-}
-
-enum CbrDialect {
-  didatico('Português'),
-  original('Original');
-
-  const CbrDialect(this.label);
-
-  final String label;
 }
 
 const String starterCode = '''inicio
@@ -189,7 +178,6 @@ fim
     id: 'upstream',
     title: 'Cbr 1.0 original',
     filename: 'cbr10.cbr',
-    dialect: CbrDialect.original,
     usesInput: true,
     code: '''// Dialeto original da Cbr 1.0 (vorgweb/C-Brasil)
 // Pede nome, idade e nota; depois gera um relatório.

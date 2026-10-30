@@ -63,6 +63,9 @@ void main() {
     await tester.tap(find.text('Exemplos').first);
     await tester.pumpAndSettle();
     expect(find.text('Abrir no editor'), findsWidgets);
+    expect(find.text('Todos'), findsNothing);
+    expect(find.text('Português'), findsNothing);
+    expect(find.text('Original'), findsNothing);
     expectWhiteIcons(tester);
 
     await tester.tap(find.text('Abrir no editor').first);
