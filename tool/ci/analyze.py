@@ -32,7 +32,8 @@ def main() -> int:
     output = f"{process.stdout}\n{process.stderr}"
     Path("/tmp/analyzer.txt").write_text(output, encoding="utf-8")
 
-    problems = 0
+    errors = 0
+    warnings = 0
     for line in output.splitlines():
         fields = line.split("|", 7)
         if len(fields) < 8:
@@ -45,7 +46,10 @@ def main() -> int:
             continue
         if severity == "INFO":
             continue
-        problems += 1
+        if severity == "ERROR":
+            errors += 1
+        else:
+            warnings += 1
         if location.startswith("file:"):
             location = urllib.parse.urlparse(location).path
         if os.path.isabs(location):
@@ -59,8 +63,11 @@ def main() -> int:
             f"title={escape(severity)}::{escape(message)}"
         )
 
-    print(f"dart analyze: {problems} problema(s) de severidade alta.")
-    if process.returncode != 0:
+    print(f"dart analyze: {errors} erro(s), {warnings} aviso(s).")
+    if errors > 0:
+        return 1
+    if process.returncode != 0 and errors == 0 and warnings == 0:
+        print(process.stderr[-4000:])
         return 1
     return 0
 
