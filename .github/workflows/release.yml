@@ -1,0 +1,206 @@
+name: Distribuição multiplataforma
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publicar os arquivos em um GitHub Release
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  web:
+    name: Web
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Dependências
+        run: flutter pub get
+      - name: Build web
+        run: |
+          flutter build web --release --no-web-resources-cdn \
+            --dart-define=CBR_UPSTREAM_COMMIT=${{ github.sha }}
+      - name: Empacotar site
+        run: |
+          cd build/web
+          zip -qr "$GITHUB_WORKSPACE/cbrasil-web.zip" .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cbrasil-web
+          path: cbrasil-web.zip
+          if-no-files-found: error
+
+  android:
+    name: Android (APK e AAB)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Dependências
+        run: flutter pub get
+      - name: APK universal
+        run: |
+          flutter build apk --release \
+            --dart-define=CBR_UPSTREAM_COMMIT=${{ github.sha }}
+          cp build/app/outputs/flutter-apk/app-release.apk cbrasil-android.apk
+      - name: App Bundle
+        run: |
+          flutter build appbundle --release \
+            --dart-define=CBR_UPSTREAM_COMMIT=${{ github.sha }}
+          cp build/app/outputs/bundle/release/app-release.aab cbrasil-android.aab
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cbrasil-android
+          path: |
+            cbrasil-android.apk
+            cbrasil-android.aab
+          if-no-files-found: error
+
+  linux:
+    name: Linux
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Dependências do Linux desktop
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Dependências
+        run: flutter pub get
+      - name: Build
+        run: |
+          flutter build linux --release \
+            --dart-define=CBR_UPSTREAM_COMMIT=${{ github.sha }}
+      - name: Empacotar
+        run: |
+          tar -czf cbrasil-linux-x64.tar.gz -C build/linux/x64/release/bundle .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cbrasil-linux
+          path: cbrasil-linux-x64.tar.gz
+          if-no-files-found: error
+
+  windows:
+    name: Windows
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Dependências
+        run: flutter pub get
+      - name: Build
+        run: flutter build windows --release --dart-define=CBR_UPSTREAM_COMMIT=${{ github.sha }}
+      - name: Empacotar
+        shell: pwsh
+        run: |
+          Compress-Archive -Path build/windows/x64/runner/Release/* `
+            -DestinationPath cbrasil-windows-x64.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cbrasil-windows
+          path: cbrasil-windows-x64.zip
+          if-no-files-found: error
+
+  macos:
+    name: macOS
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Dependências
+        run: flutter pub get
+      - name: Build
+        run: flutter build macos --release --dart-define=CBR_UPSTREAM_COMMIT=${{ github.sha }}
+      - name: Empacotar
+        run: |
+          ditto -c -k --sequesterRsrc --keepParent \
+            "build/macos/Build/Products/Release/C Brasil.app" cbrasil-macos.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cbrasil-macos
+          path: cbrasil-macos.zip
+          if-no-files-found: error
+
+  ios:
+    name: iOS (IPA sem assinatura)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Dependências
+        run: flutter pub get
+      - name: Build sem assinatura
+        run: |
+          flutter build ios --release --no-codesign \
+            --dart-define=CBR_UPSTREAM_COMMIT=${{ github.sha }}
+      - name: Empacotar Payload
+        run: |
+          rm -rf /tmp/cbr-ipa && mkdir -p /tmp/cbr-ipa/Payload
+          cp -R build/ios/iphoneos/Runner.app /tmp/cbr-ipa/Payload/
+          cd /tmp/cbr-ipa && zip -qry "$GITHUB_WORKSPACE/cbrasil-ios.ipa" Payload
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cbrasil-ios
+          path: cbrasil-ios.ipa
+          if-no-files-found: error
+
+  publish:
+    name: Publicar arquivos
+    needs: [web, android, linux, windows, macos, ios]
+    if: startsWith(github.ref, 'refs/tags/v') || inputs.publish == true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Publicar no GitHub Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || format('build-{0}', github.run_number) }}
+          name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || format('C Brasil • build {0}', github.run_number) }}
+          body: |
+            Arquivos gerados automaticamente a partir do commit ${{ github.sha }}.
+
+            - `cbrasil-android.apk` — Android (assinado com a chave de depuração)
+            - `cbrasil-android.aab` — Android App Bundle para a Play Store
+            - `cbrasil-ios.ipa` — iOS sem assinatura (precisa de certificado para instalar)
+            - `cbrasil-windows-x64.zip` — Windows (.exe + DLLs)
+            - `cbrasil-linux-x64.tar.gz` — Linux (x64)
+            - `cbrasil-macos.zip` — macOS (app universal)
+            - `cbrasil-web.zip` — site estático (o mesmo publicado na Vercel)
+          files: dist/*
+          fail_on_unmatched_files: false

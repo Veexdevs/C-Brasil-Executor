@@ -96,28 +96,26 @@ def main() -> int:
         print(f"FALHOU: {name}\n  {snippet}")
 
     if failures:
-        if prints:
-            tail = "\n".join(prints[-12:])
-            print(f"::error title=Saída do teste::{escape(tail[-1400:])}")
         detailed = subprocess.run(
             ["flutter", "test", "--no-pub", "--reporter", "expanded", *ARGS],
             capture_output=True,
             text=True,
             check=False,
         )
+        expanded = f"{detailed.stdout}\n{detailed.stderr}".splitlines()
         Path("/tmp/flutter-test-expanded.txt").write_text(
-            f"{detailed.stdout}\n{detailed.stderr}", encoding="utf-8"
+            "\n".join(expanded), encoding="utf-8"
         )
-        keywords = ("EXCEPTION", "Exception", "Error:", "error:", "Expected:",
-                    "Actual:", "The following", "Failed assertion", "#0 ")
-        interesting = [
-            line.strip()
-            for line in f"{detailed.stdout}\n{detailed.stderr}".splitlines()
-            if any(word in line for word in keywords)
-        ]
-        for index in range(0, min(len(interesting), 60), 20):
-            chunk = "\n".join(interesting[index:index + 20])
-            print(f"::error title=Detalhes do flutter test::{escape(chunk[:1400])}")
+        emitted = 0
+        for index, line in enumerate(expanded):
+            if "EXCEPTION CAUGHT" not in line or emitted >= 3:
+                continue
+            window = [item.strip() for item in expanded[index:index + 12] if item.strip()]
+            print(f"::error title=Exceção no teste::{escape(chr(10).join(window))[:1800]}")
+            emitted += 1
+        if emitted == 0:
+            tail = [item.strip() for item in expanded[-40:] if item.strip()]
+            print(f"::error title=Fim do log de teste::{escape(chr(10).join(tail))[:1800]}")
 
     print(f"flutter test: {len(names)} teste(s), {len(failures)} falha(s).")
     if process.returncode != 0:
