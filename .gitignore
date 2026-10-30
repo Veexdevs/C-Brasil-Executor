@@ -23,7 +23,8 @@ macos/Flutter/GeneratedPluginRegistrant.swift
 windows/flutter/ephemeral/
 linux/flutter/ephemeral/
 
-# Generated release bundles
+# Generated release bundles and deployment caches
+.vercel/
 .upstream-cache/
 *.ipa
 *.apk
