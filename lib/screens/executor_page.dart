@@ -4,7 +4,6 @@ import '../data/examples.dart';
 import '../services/platform_service.dart';
 import '../state/executor_state.dart';
 import '../theme/cbr_theme.dart';
-import '../widgets/cbr_logo.dart';
 import '../widgets/cbr_panel.dart';
 import '../widgets/code_editor.dart';
 import '../widgets/console_panel.dart';
@@ -134,7 +133,7 @@ class _ExecutorPageState extends State<ExecutorPage> {
             Icon(
               error ? Icons.error_outline_rounded : Icons.check_circle_outline_rounded,
               size: 17,
-              color: error ? CbrColors.red : CbrColors.green,
+              color: error ? CbrColors.yellow : CbrColors.green,
             ),
             const SizedBox(width: 10),
             Expanded(child: Text(message)),
@@ -180,144 +179,25 @@ class _ExecutorPageState extends State<ExecutorPage> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final wide = constraints.maxWidth >= 1020;
+        if (wide) {
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(flex: 58, child: _editorPanel(state, true)),
+              const SizedBox(width: 16),
+              Expanded(flex: 42, child: _console(state, true)),
+            ],
+          );
+        }
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _hero(state, wide),
-            const SizedBox(height: 18),
-            Expanded(
-              child: wide
-                  ? Row(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Expanded(flex: 58, child: _editorPanel(state, wide)),
-                        const SizedBox(width: 16),
-                        Expanded(flex: 42, child: _console(state, wide)),
-                      ],
-                    )
-                  : Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Expanded(flex: 56, child: _editorPanel(state, false)),
-                        const SizedBox(height: 12),
-                        Expanded(flex: 44, child: _console(state, false)),
-                      ],
-                    ),
-            ),
+            Expanded(flex: 56, child: _editorPanel(state, false)),
+            const SizedBox(height: 12),
+            Expanded(flex: 44, child: _console(state, false)),
           ],
         );
       },
-    );
-  }
-
-  Widget _hero(ExecutorState state, bool wide) {
-    final title = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Wrap(
-          crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: 12,
-          runSpacing: 6,
-          children: [
-            ShaderMask(
-              shaderCallback: (rect) => const LinearGradient(
-                colors: [CbrColors.text, Color(0xFFB7F5DA)],
-              ).createShader(rect),
-              child: Text(
-                'C Brasil',
-                style: CbrTextStyles.headline.copyWith(fontSize: wide ? 34 : 26),
-              ),
-            ),
-            Text(
-              'CBR',
-              style: CbrTextStyles.headline.copyWith(
-                fontSize: wide ? 20 : 15,
-                color: CbrColors.greenBright,
-                letterSpacing: 1.2,
-              ),
-            ),
-            const CbrChip(label: 'linguagem 1.0', color: CbrColors.blue, icon: Icons.memory_rounded),
-          ],
-        ),
-        const SizedBox(height: 6),
-        Text(
-          'Uma linguagem simples, moderna e poderosa. Escreva, execute e veja o '
-          'resultado em tempo real — sem enviar seu código para nenhum servidor.',
-          style: CbrTextStyles.bodyMuted.copyWith(fontSize: wide ? 13.5 : 12.5),
-        ),
-      ],
-    );
-
-    if (!wide) {
-      return Padding(
-        padding: const EdgeInsets.only(top: 4),
-        child: title,
-      );
-    }
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Expanded(child: title),
-        const SizedBox(width: 24),
-        _brandCard(),
-      ],
-    );
-  }
-
-  Widget _brandCard() {
-    return Container(
-      width: 300,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        gradient: CbrColors.heroGradient,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: CbrColors.border),
-      ),
-      child: Row(
-        children: [
-          const CbrLogo(size: 42, glow: true),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'C Brasil (CBR)',
-                  style: CbrTextStyles.title.copyWith(fontSize: 13.5),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'Código. Simples. Poderoso.',
-                  style: CbrTextStyles.bodyMuted.copyWith(fontSize: 11.5),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Container(
-                      width: 7,
-                      height: 7,
-                      decoration: const BoxDecoration(
-                        color: CbrColors.green,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Flexible(
-                      child: Text(
-                        'execução local • offline',
-                        overflow: TextOverflow.ellipsis,
-                        style: CbrTextStyles.label.copyWith(fontSize: 10),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -452,8 +332,8 @@ class _ExecutorPageState extends State<ExecutorPage> {
                       value: example,
                       child: Row(
                         children: [
-                          const Icon(Icons.auto_awesome_outlined,
-                              size: 15, color: CbrColors.yellow),
+                          const Icon(Icons.library_books_outlined,
+                              size: 15, color: CbrColors.blue),
                           const SizedBox(width: 10),
                           Flexible(
                             child: Text(
@@ -473,8 +353,8 @@ class _ExecutorPageState extends State<ExecutorPage> {
                     border: Border.all(color: CbrColors.border),
                     color: CbrColors.surface,
                   ),
-                  child: const Icon(Icons.auto_awesome_outlined,
-                      size: 16, color: CbrColors.yellow),
+                  child: const Icon(Icons.library_books_outlined,
+                      size: 16, color: CbrColors.blue),
                 ),
               ),
               const SizedBox(width: 8),

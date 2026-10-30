@@ -20,12 +20,4 @@ flutter config --enable-web
 flutter --version
 flutter pub get
 
-UPSTREAM_SHA="${CBR_UPSTREAM_COMMIT:-}"
-if [[ -z "$UPSTREAM_SHA" ]]; then
-  UPSTREAM_SHA="$(git ls-remote https://github.com/vorgweb/C-Brasil.git refs/heads/main 2>/dev/null | cut -f1 || true)"
-fi
-UPSTREAM_SHA="${UPSTREAM_SHA:-${VERCEL_GIT_COMMIT_SHA:-unknown}}"
-
-flutter build web --release \
-  --base-href / \
-  --dart-define="CBR_UPSTREAM_COMMIT=$UPSTREAM_SHA"
+flutter build web --release --base-href /

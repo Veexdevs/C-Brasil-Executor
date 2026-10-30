@@ -35,12 +35,6 @@ class _ExamplesPageState extends State<ExamplesPage> {
               Text('Exemplos', style: CbrTextStyles.headline.copyWith(fontSize: 26)),
             ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            'Programas completos para aprender os recursos da linguagem. '
-            'Clique em "Abrir no editor" para carregar e executar.',
-            style: CbrTextStyles.bodyMuted,
-          ),
           const SizedBox(height: 16),
           Wrap(
             spacing: 8,

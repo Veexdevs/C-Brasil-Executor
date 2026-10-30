@@ -2,57 +2,33 @@ import 'package:flutter/material.dart';
 
 import '../theme/cbr_theme.dart';
 
-/// Logo oficial (arquivo `assets/branding/logo.png`), com cantos arredondados.
 class CbrLogo extends StatelessWidget {
-  const CbrLogo({super.key, this.size = 40, this.radius, this.glow = false});
+  const CbrLogo({super.key, this.size = 40, this.radius});
 
   final double size;
   final double? radius;
-  final bool glow;
 
   @override
   Widget build(BuildContext context) {
-    final rounded = ClipRRect(
+    return ClipRRect(
       borderRadius: BorderRadius.circular(radius ?? size * 0.26),
       child: Image.asset(
         'assets/branding/logo.png',
         width: size,
         height: size,
+        fit: BoxFit.contain,
         filterQuality: FilterQuality.high,
         isAntiAlias: true,
       ),
     );
-    if (!glow) return rounded;
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(radius ?? size * 0.26),
-        boxShadow: [
-          BoxShadow(
-            color: CbrColors.green.withValues(alpha: 0.32),
-            blurRadius: size * 0.5,
-            spreadRadius: 1,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: rounded,
-    );
   }
 }
 
-/// Marca completa: logo + "C Brasil" + sigla.
+/// Brand lockup: logo followed by “C Brasil (cbr)”.
 class CbrWordmark extends StatelessWidget {
-  const CbrWordmark({
-    super.key,
-    this.logoSize = 40,
-    this.showSubtitle = false,
-    this.showAcronym = true,
-    this.onTap,
-  });
+  const CbrWordmark({super.key, this.logoSize = 40, this.onTap});
 
   final double logoSize;
-  final bool showSubtitle;
-  final bool showAcronym;
   final VoidCallback? onTap;
 
   @override
@@ -63,61 +39,42 @@ class CbrWordmark extends StatelessWidget {
       children: [
         CbrLogo(size: logoSize),
         SizedBox(width: logoSize * 0.3),
-        Column(
+        Row(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
           children: [
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.baseline,
-              textBaseline: TextBaseline.alphabetic,
-              children: [
-                Text(
-                  'C Brasil',
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontFamilyFallback: kSansFallback,
-                    fontSize: titleSize,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.6,
-                    color: CbrColors.text,
-                  ),
-                ),
-                if (showAcronym) ...[
-                  const SizedBox(width: 6),
-                  Text(
-                    '(CBR)',
-                    style: TextStyle(
-                      fontFamily: 'monospace',
-                      fontFamilyFallback: kMonoFallback,
-                      fontSize: titleSize * 0.62,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.5,
-                      color: CbrColors.greenBright,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-            if (showSubtitle)
-              Text(
-                'Linguagem de programação brasileira',
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontFamilyFallback: kSansFallback,
-                  fontSize: titleSize * 0.5,
-                  height: 1.25,
-                  color: CbrColors.textMuted,
-                ),
+            Text(
+              'C Brasil',
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontFamilyFallback: kSansFallback,
+                fontSize: titleSize,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.35,
+                color: CbrColors.text,
               ),
+            ),
+            const SizedBox(width: 5),
+            Text(
+              '(cbr)',
+              style: TextStyle(
+                fontFamily: 'monospace',
+                fontFamilyFallback: kMonoFallback,
+                fontSize: titleSize * 0.66,
+                fontWeight: FontWeight.w600,
+                color: CbrColors.greenBright,
+              ),
+            ),
           ],
         ),
       ],
     );
+
     if (onTap == null) return content;
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(10),
       child: Padding(padding: const EdgeInsets.all(2), child: content),
     );
   }
