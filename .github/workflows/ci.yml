@@ -4,11 +4,6 @@ on:
   push:
   pull_request:
   workflow_dispatch:
-    inputs:
-      scaffold:
-        description: 'Gerar e commitar os runners nativos (flutter create)'
-        type: boolean
-        default: false
 
 permissions:
   contents: read
@@ -48,7 +43,7 @@ jobs:
 
   scaffold:
     name: Gerar runners nativos
-    if: github.event_name == 'workflow_dispatch' && inputs.scaffold
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[scaffold]')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -90,4 +85,34 @@ jobs:
             exit 0
           fi
           git commit -m "chore: gerar runners nativos com flutter create"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+
+  format:
+    name: Formatar código
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[format]')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: dart format
+        run: dart format lib test tool
+
+      - name: Commitar formatação
+        run: |
+          set -euo pipefail
+          git config user.name "C Brasil Bot"
+          git config user.email "cbr-bot@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Já estava formatado."
+            exit 0
+          fi
+          git commit -m "style: aplicar dart format"
           git push origin "HEAD:${GITHUB_REF_NAME}"
