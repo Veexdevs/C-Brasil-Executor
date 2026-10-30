@@ -71,19 +71,33 @@ jobs:
           import json
 
           names = {}
+          prints = {}
+          events = []
           for line in Path('/tmp/flutter-test.jsonl').read_text(errors='replace').splitlines():
               try:
                   event = json.loads(line)
               except json.JSONDecodeError:
                   continue
+              events.append(event)
               test = event.get('test') or {}
               if event.get('type') == 'testStart':
                   names[test.get('id')] = test.get('name', 'Cbr test')
-              if event.get('type') == 'error':
-                  name = names.get(event.get('testID'), 'Cbr test')
-                  detail = event.get('error', 'Test failed')
-                  stack = event.get('stackTrace', '')
-                  message = f'{name}: {detail} {stack}'.replace('%', '%25').replace(chr(13), ' ').replace(chr(10), ' ')
-                  print(f'::error file=test/interpreter_test.dart,title={name}::{message}')
+              test_id = event.get('testID', event.get('testId'))
+              if event.get('type') == 'print' and test_id is not None:
+                  prints.setdefault(test_id, []).append(event.get('message', ''))
+
+          for event in events:
+              if event.get('type') != 'error':
+                  continue
+              test_id = event.get('testID', event.get('testId'))
+              name = names.get(test_id, 'Cbr test')
+              detail = event.get('error', 'Test failed')
+              stack = event.get('stackTrace', '')
+              diagnostics = chr(10).join(prints.get(test_id, []))
+              message = f'{name}: {detail} {stack}{chr(10)}{diagnostics}'
+              if len(message) > 3500:
+                  message = message[:1800] + chr(10) + '…' + chr(10) + message[-1600:]
+              message = message.replace('%', '%25').replace(chr(13), ' ').replace(chr(10), '%0A')
+              print(f'::error title={name}::{message}')
           PY
           exit "$result"
