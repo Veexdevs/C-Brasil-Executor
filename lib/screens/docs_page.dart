@@ -153,12 +153,15 @@ class _DocsPageState extends State<DocsPage> {
                 color: selected ? CbrColors.greenBright : CbrColors.textMuted,
               ),
               const SizedBox(width: 8),
-              Text(
-                title,
-                style: CbrTextStyles.body.copyWith(
-                  fontSize: wide ? 12.5 : 12,
-                  fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                  color: selected ? CbrColors.text : CbrColors.textMuted,
+              Flexible(
+                child: Text(
+                  title,
+                  overflow: TextOverflow.ellipsis,
+                  style: CbrTextStyles.body.copyWith(
+                    fontSize: wide ? 12.5 : 12,
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                    color: selected ? CbrColors.text : CbrColors.textMuted,
+                  ),
                 ),
               ),
             ],
@@ -187,7 +190,13 @@ class _DocsPageState extends State<DocsPage> {
                 child: Icon(section.icon, size: 16, color: CbrColors.greenBright),
               ),
               const SizedBox(width: 12),
-              Text(section.title, style: CbrTextStyles.title.copyWith(fontSize: 16)),
+              Flexible(
+                child: Text(
+                  section.title,
+                  overflow: TextOverflow.ellipsis,
+                  style: CbrTextStyles.title.copyWith(fontSize: 16),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 14),

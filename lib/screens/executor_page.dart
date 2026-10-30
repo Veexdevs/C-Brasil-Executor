@@ -304,9 +304,12 @@ class _ExecutorPageState extends State<ExecutorPage> {
                       ),
                     ),
                     const SizedBox(width: 6),
-                    Text(
-                      'execução local • offline',
-                      style: CbrTextStyles.label.copyWith(fontSize: 10),
+                    Flexible(
+                      child: Text(
+                        'execução local • offline',
+                        overflow: TextOverflow.ellipsis,
+                        style: CbrTextStyles.label.copyWith(fontSize: 10),
+                      ),
                     ),
                   ],
                 ),
@@ -361,9 +364,12 @@ class _ExecutorPageState extends State<ExecutorPage> {
                 ),
                 const Spacer(),
                 if (wide)
-                  Text(
-                    'Ctrl+Enter executa • Ctrl+S salva',
-                    style: CbrTextStyles.label.copyWith(fontSize: 10),
+                  Flexible(
+                    child: Text(
+                      'Ctrl+Enter executa • Ctrl+S salva',
+                      overflow: TextOverflow.ellipsis,
+                      style: CbrTextStyles.label.copyWith(fontSize: 10),
+                    ),
                   ),
                 const SizedBox(width: 12),
                 Text(
@@ -379,132 +385,153 @@ class _ExecutorPageState extends State<ExecutorPage> {
   }
 
   Widget _toolbar(ExecutorState state, bool wide) {
-    final dirty = state.dirty;
-    return Container(
-      padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
-      color: CbrColors.surfaceAlt,
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: CbrColors.surface,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: CbrColors.border),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.description_outlined, size: 14, color: CbrColors.greenBright),
-                const SizedBox(width: 7),
-                ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 150),
-                  child: Text(
-                    state.filename,
-                    overflow: TextOverflow.ellipsis,
-                    style: CbrTextStyles.mono.copyWith(
-                      fontSize: 12,
-                      color: CbrColors.text,
-                    ),
-                  ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 720;
+        return Container(
+          padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+          color: CbrColors.surfaceAlt,
+          child: Row(
+            children: [
+              Expanded(
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: _filenameChip(state),
                 ),
-                if (dirty) ...[
-                  const SizedBox(width: 6),
-                  Container(
-                    width: 6,
-                    height: 6,
-                    decoration: const BoxDecoration(
-                      color: CbrColors.yellow,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                ],
+              ),
+              const SizedBox(width: 8),
+              if (compact) ...[
+                CbrButton(
+                  label: 'Abrir',
+                  icon: Icons.folder_open_rounded,
+                  variant: CbrButtonVariant.ghost,
+                  compact: true,
+                  onPressed: _openFile,
+                  tooltip: 'Abrir .cbr',
+                ),
+                CbrButton(
+                  label: 'Salvar',
+                  icon: Icons.save_outlined,
+                  variant: CbrButtonVariant.ghost,
+                  compact: true,
+                  onPressed: _saveFile,
+                  tooltip: 'Salvar .cbr',
+                ),
+              ] else ...[
+                CbrButton(
+                  label: 'Novo',
+                  icon: Icons.add_rounded,
+                  variant: CbrButtonVariant.ghost,
+                  onPressed: _newFile,
+                  tooltip: 'Novo arquivo',
+                ),
+                CbrButton(
+                  label: 'Abrir',
+                  icon: Icons.folder_open_rounded,
+                  variant: CbrButtonVariant.ghost,
+                  onPressed: _openFile,
+                  tooltip: 'Abrir .cbr',
+                ),
+                CbrButton(
+                  label: 'Salvar',
+                  icon: Icons.save_outlined,
+                  variant: CbrButtonVariant.ghost,
+                  onPressed: _saveFile,
+                  tooltip: 'Salvar .cbr',
+                ),
               ],
+              PopupMenuButton<CbrExample>(
+                tooltip: 'Abrir exemplo',
+                color: CbrColors.surfaceRaised,
+                onSelected: (example) {
+                  state.loadProgram(example.code, name: example.filename);
+                },
+                itemBuilder: (context) => [
+                  for (final example in cbrExamples)
+                    PopupMenuItem(
+                      value: example,
+                      child: Row(
+                        children: [
+                          const Icon(Icons.auto_awesome_outlined,
+                              size: 15, color: CbrColors.yellow),
+                          const SizedBox(width: 10),
+                          Flexible(
+                            child: Text(
+                              example.title,
+                              overflow: TextOverflow.ellipsis,
+                              style: CbrTextStyles.body,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(9),
+                    border: Border.all(color: CbrColors.border),
+                    color: CbrColors.surface,
+                  ),
+                  child: const Icon(Icons.auto_awesome_outlined,
+                      size: 16, color: CbrColors.yellow),
+                ),
+              ),
+              const SizedBox(width: 8),
+              CbrButton(
+                label: state.running ? 'Executando' : 'Executar',
+                icon: state.running ? null : Icons.play_arrow_rounded,
+                busy: state.running,
+                variant: CbrButtonVariant.primary,
+                compact: compact,
+                onPressed: state.running ? null : state.run,
+                tooltip: 'Executar (Ctrl+Enter)',
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _filenameChip(ExecutorState state) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: CbrColors.surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: CbrColors.border),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.description_outlined, size: 14, color: CbrColors.greenBright),
+          const SizedBox(width: 7),
+          Flexible(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 150),
+              child: Text(
+                state.filename,
+                overflow: TextOverflow.ellipsis,
+                softWrap: false,
+                style: CbrTextStyles.mono.copyWith(
+                  fontSize: 12,
+                  color: CbrColors.text,
+                ),
+              ),
             ),
           ),
-          const SizedBox(width: 8),
-          if (wide) ...[
-            CbrButton(
-              label: 'Novo',
-              icon: Icons.add_rounded,
-              variant: CbrButtonVariant.ghost,
-              onPressed: _newFile,
-              tooltip: 'Novo arquivo',
-            ),
-            CbrButton(
-              label: 'Abrir',
-              icon: Icons.folder_open_rounded,
-              variant: CbrButtonVariant.ghost,
-              onPressed: _openFile,
-              tooltip: 'Abrir .cbr',
-            ),
-            CbrButton(
-              label: 'Salvar',
-              icon: Icons.save_outlined,
-              variant: CbrButtonVariant.ghost,
-              onPressed: _saveFile,
-              tooltip: 'Salvar .cbr',
-            ),
-          ] else ...[
-            CbrButton(
-              label: 'Abrir',
-              icon: Icons.folder_open_rounded,
-              variant: CbrButtonVariant.ghost,
-              compact: true,
-              onPressed: _openFile,
-              tooltip: 'Abrir .cbr',
-            ),
-            CbrButton(
-              label: 'Salvar',
-              icon: Icons.save_outlined,
-              variant: CbrButtonVariant.ghost,
-              compact: true,
-              onPressed: _saveFile,
-              tooltip: 'Salvar .cbr',
+          if (state.dirty) ...[
+            const SizedBox(width: 6),
+            Container(
+              width: 6,
+              height: 6,
+              decoration: const BoxDecoration(
+                color: CbrColors.yellow,
+                shape: BoxShape.circle,
+              ),
             ),
           ],
-          const Spacer(),
-          PopupMenuButton<CbrExample>(
-            tooltip: 'Abrir exemplo',
-            color: CbrColors.surfaceRaised,
-            onSelected: (example) {
-              state.loadProgram(example.code, name: example.filename);
-            },
-            itemBuilder: (context) => [
-              for (final example in cbrExamples)
-                PopupMenuItem(
-                  value: example,
-                  child: Row(
-                    children: [
-                      const Icon(Icons.auto_awesome_outlined,
-                          size: 15, color: CbrColors.yellow),
-                      const SizedBox(width: 10),
-                      Text(example.title, style: CbrTextStyles.body),
-                    ],
-                  ),
-                ),
-            ],
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(9),
-                border: Border.all(color: CbrColors.border),
-                color: CbrColors.surface,
-              ),
-              child: const Icon(Icons.auto_awesome_outlined,
-                  size: 16, color: CbrColors.yellow),
-            ),
-          ),
-          const SizedBox(width: 10),
-          CbrButton(
-            label: state.running ? 'Executando' : 'Executar',
-            icon: state.running ? null : Icons.play_arrow_rounded,
-            busy: state.running,
-            variant: CbrButtonVariant.primary,
-            compact: false,
-            onPressed: state.running ? null : state.run,
-            tooltip: 'Executar (Ctrl+Enter)',
-          ),
         ],
       ),
     );

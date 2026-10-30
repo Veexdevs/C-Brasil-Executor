@@ -303,10 +303,11 @@ class _Header extends StatelessWidget {
                 onTap: () => onSelected(CbrPage.executor),
               ),
               if (!compact) ...[
-                const SizedBox(width: 28),
-                _nav(medium),
-              ],
-              const Spacer(),
+                const SizedBox(width: 20),
+                Expanded(child: _nav(medium)),
+                const SizedBox(width: 8),
+              ] else
+                const Spacer(),
               _UpdateBadge(upstream: upstream, onTap: onCheckUpdates),
               const SizedBox(width: 6),
               IconButton(
@@ -346,17 +347,19 @@ class _Header extends StatelessWidget {
   }
 
   Widget _nav(bool medium) {
-    return Row(
-      children: [
-        for (final item in CbrPage.values)
-          _NavItem(
-            page: item,
-            selected: item == page,
-            iconOnly: false,
-            dense: medium,
-            onTap: () => onSelected(item),
-          ),
-      ],
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          for (final item in CbrPage.values)
+            _NavItem(
+              page: item,
+              selected: item == page,
+              dense: medium,
+              onTap: () => onSelected(item),
+            ),
+        ],
+      ),
     );
   }
 }
@@ -433,14 +436,12 @@ class _NavItem extends StatelessWidget {
     required this.page,
     required this.selected,
     required this.onTap,
-    this.iconOnly = false,
     this.dense = false,
   });
 
   final CbrPage page;
   final bool selected;
   final VoidCallback onTap;
-  final bool iconOnly;
   final bool dense;
 
   @override

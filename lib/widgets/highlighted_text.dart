@@ -111,7 +111,13 @@ class CodeBlock extends StatelessWidget {
                 children: [
                   const Icon(Icons.code_rounded, size: 14, color: CbrColors.greenBright),
                   const SizedBox(width: 8),
-                  Text(title!, style: CbrTextStyles.label.copyWith(color: CbrColors.textMuted)),
+                  Flexible(
+                    child: Text(
+                      title!,
+                      overflow: TextOverflow.ellipsis,
+                      style: CbrTextStyles.label.copyWith(color: CbrColors.textMuted),
+                    ),
+                  ),
                 ],
               ),
             ),
