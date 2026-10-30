@@ -548,7 +548,11 @@ class _Runner {
     final loopScope = _Scope(scope);
     final variable = loopScope.declare(statement.variable, CbrType.inteiro, CbrInt(start));
     var current = start;
-    while (step > 0 ? current < end : current > end) {
+    while (true) {
+      final withinRange = statement.inclusive
+          ? (step > 0 ? current <= end : current >= end)
+          : (step > 0 ? current < end : current > end);
+      if (!withinRange) break;
       await _tick(statement.line, statement.column);
       variable.value = CbrInt(current);
       try {
@@ -620,8 +624,12 @@ class _Runner {
     if (start < 0) return;
 
     try {
-      for (var index = start; index < statement.cases.length; index++) {
-        await _executeBlock(statement.cases[index].body, _Scope(scope));
+      if (statement.fallthrough) {
+        for (var index = start; index < statement.cases.length; index++) {
+          await _executeBlock(statement.cases[index].body, _Scope(scope));
+        }
+      } else {
+        await _executeBlock(statement.cases[start].body, _Scope(scope));
       }
     } on _BreakSignal {
       return;

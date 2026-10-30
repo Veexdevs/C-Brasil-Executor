@@ -156,13 +156,19 @@ class ForRangeStmt extends Stmt {
     this.step,
     this.body,
     int line,
-    int column,
-  ) : super(line, column);
+    int column, {
+    this.inclusive = false,
+  }) : super(line, column);
+
   final String variable;
   final Expr start;
   final Expr end;
   final Expr? step;
   final List<Stmt> body;
+
+  /// `range(inicio, fim)` exclui o fim (como no compilador oficial);
+  /// `para i de 1 ate 3` inclui o 3.
+  final bool inclusive;
 }
 
 class ForClassicStmt extends Stmt {
@@ -188,10 +194,20 @@ class SwitchCase {
 }
 
 class SwitchStmt extends Stmt {
-  const SwitchStmt(this.subject, this.cases, int line, int column)
-      : super(line, column);
+  const SwitchStmt(
+    this.subject,
+    this.cases,
+    int line,
+    int column, {
+    this.fallthrough = false,
+  }) : super(line, column);
+
   final Expr subject;
   final List<SwitchCase> cases;
+
+  /// `true` no estilo C (`switch`): sem `break` o fluxo continua no caso
+  /// seguinte. No `escolha` em português cada caso termina sozinho.
+  final bool fallthrough;
 }
 
 class BreakStmt extends Stmt {

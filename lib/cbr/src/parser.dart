@@ -145,7 +145,7 @@ class CbrParser {
     }
     // Estilo em português: o bloco começa direto depois do cabeçalho e
     // termina em "fimse", "fimpara", "fimfuncao"...
-    final body = _statements({endKeyword});
+    final body = _statements({endKeyword, TokenType.kwElse});
     if (consumeEnd) {
       _expect(
         endKeyword,
@@ -186,6 +186,12 @@ class CbrParser {
       case TokenType.kwTypeFloat:
       case TokenType.kwTypeText:
       case TokenType.kwTypeBool:
+        // No dialeto original "texto" e "inteiro" podem ser nomes de
+        // variáveis (`texto = "banana"`). Só tratamos como declaração quando
+        // vem um identificador logo depois.
+        if (_peekNext.type != TokenType.identifier) {
+          return _expressionOrAssignment();
+        }
         return _variableDeclaration();
       case TokenType.kwIf:
         return _ifStatement();
@@ -414,6 +420,7 @@ class CbrParser {
         body.body,
         keyword.line,
         keyword.column,
+        inclusive: true,
       );
     }
 
@@ -499,7 +506,13 @@ class CbrParser {
     } else {
       _match(TokenType.kwEndSwitch);
     }
-    return SwitchStmt(subject, cases, keyword.line, keyword.column);
+    return SwitchStmt(
+      subject,
+      cases,
+      keyword.line,
+      keyword.column,
+      fallthrough: keyword.lexeme.toLowerCase() == 'switch',
+    );
   }
 
   Stmt _returnStatement() {
