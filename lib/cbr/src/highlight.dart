@@ -111,30 +111,30 @@ class CbrHighlighter {
       index++;
     }
     final end = index > line.length ? line.length : index;
-    spans.add(CbrHighlightSpan(start, end, CbrTokenStyle.text));
-    if (closed) {
-      _markersInside(line, start, end, spans);
+    if (!closed) {
+      spans.add(CbrHighlightSpan(start, end, CbrTokenStyle.text));
+      return end;
+    }
+    // Emite o texto em pedaços para destacar os marcadores `{int.nome}`
+    // sem sobrepor spans (o editor desenha na ordem em que recebe).
+    var cursor = start;
+    var scan = start;
+    while (scan < end) {
+      final open = line.indexOf('{', scan);
+      if (open < 0 || open >= end) break;
+      final close = line.indexOf('}', open);
+      if (close < 0 || close >= end) break;
+      if (open > cursor) {
+        spans.add(CbrHighlightSpan(cursor, open, CbrTokenStyle.text));
+      }
+      spans.add(CbrHighlightSpan(open, close + 1, CbrTokenStyle.marker));
+      cursor = close + 1;
+      scan = cursor;
+    }
+    if (cursor < end) {
+      spans.add(CbrHighlightSpan(cursor, end, CbrTokenStyle.text));
     }
     return end;
-  }
-
-  /// Destaca `{int.nome}` dentro de um texto para diferenciar a interpolação
-  /// do restante da string.
-  void _markersInside(
-    String line,
-    int start,
-    int end,
-    List<CbrHighlightSpan> spans,
-  ) {
-    var index = start;
-    while (index < end) {
-      final open = line.indexOf('{', index);
-      if (open < 0 || open >= end) return;
-      final close = line.indexOf('}', open);
-      if (close < 0 || close >= end) return;
-      spans.add(CbrHighlightSpan(open, close + 1, CbrTokenStyle.marker));
-      index = close + 1;
-    }
   }
 
   int _number(String line, int start) {

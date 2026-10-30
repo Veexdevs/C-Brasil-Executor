@@ -44,8 +44,6 @@ inicio
     para (inteiro i = 1; i <= 5; i = i + 1) faça
         escreva("Contagem: ", i)
     fimpara
-
-    retorne 0
 fim
 ''';
 

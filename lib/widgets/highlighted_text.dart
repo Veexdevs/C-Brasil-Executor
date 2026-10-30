@@ -17,10 +17,12 @@ TextSpan buildHighlightedSpan(
   final lines = code.split('\n');
   for (var index = 0; index < lines.length; index++) {
     final line = lines[index];
-    final lineSpans = highlighter.highlightLine(line);
+    final lineSpans = highlighter.highlightLine(line)
+      ..sort((a, b) => a.start.compareTo(b.start));
     final isMarked = highlightLine != null && index + 1 == highlightLine;
     var cursor = 0;
     for (final span in lineSpans) {
+      if (span.end > line.length || span.start < cursor) continue;
       if (span.start > cursor) {
         spans.add(TextSpan(
           text: line.substring(cursor, span.start),
