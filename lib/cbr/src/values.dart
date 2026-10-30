@@ -104,14 +104,14 @@ String _formatExponent(int exponent) {
   return 'e$sign$digits';
 }
 
-/// Converte um decimal para inteiro truncando, como o C faz ao atribuir
-/// `double` em `int`.
+/// Converte um decimal para inteiro truncando, limitado ao intervalo que pode
+/// ser representado exatamente em todas as plataformas (incluindo Web).
 int truncateToInt(double value) {
   if (value.isNaN || value.isInfinite) return 0;
-  final truncated = value.truncate();
-  if (truncated > 9223372036854775807) return 9223372036854775807;
-  if (truncated < -9223372036854775808) return -9223372036854775808;
-  return truncated;
+  const maxSafeInteger = 9007199254740991;
+  if (value >= maxSafeInteger) return maxSafeInteger;
+  if (value <= -maxSafeInteger) return -maxSafeInteger;
+  return value.truncate();
 }
 
 /// Nome do marcador usado em `{int.nome}`, `{float.nome}` etc.
