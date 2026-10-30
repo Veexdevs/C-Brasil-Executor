@@ -1,89 +1,42 @@
-name: Flutter CI
+name: CI
 
 on:
   push:
-    branches: ['**']
   pull_request:
   workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  test:
-    name: Analyze and test Cbr
+  verify:
+    name: Analisar, testar e conferir a linguagem
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Flutter
+      - name: Instalar Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
 
-      - name: Resolve dependencies
+      - name: Dependências
         run: flutter pub get
 
-      - name: Format Dart files
-        run: dart format lib test
+      - name: Analisar código
+        run: python3 tool/ci/analyze.py
 
-      - name: Analyze
-        shell: bash
-        run: |
-          set +e
-          dart analyze --format=machine lib test > /tmp/analyzer-machine.txt 2>&1
-          result=$?
-          cat /tmp/analyzer-machine.txt
-          python3 - <<'PY'
-          from pathlib import Path
-          import os
-          import urllib.parse
+      - name: Testes do interpretador e da interface
+        run: python3 tool/ci/test.py
 
-          for line in Path('/tmp/analyzer-machine.txt').read_text(errors='replace').splitlines():
-              fields = line.split('|', 7)
-              if len(fields) < 8 or fields[0] not in {'ERROR', 'WARNING'}:
-                  continue
-              location = fields[3]
-              if location.startswith('file:'):
-                  location = urllib.parse.urlparse(location).path
-              if os.path.isabs(location):
-                  location = os.path.relpath(location, os.getcwd())
-              severity = 'error' if fields[0] == 'ERROR' else 'warning'
-              message = fields[7].replace('%', '%25').replace(chr(13), ' ').replace(chr(10), ' ')
-              print(f'::{severity} file={location},line={fields[4]},col={fields[5]}::{message}')
-          PY
-          exit "$result"
+      - name: Conformidade com o compilador oficial
+        run: bash tool/conformance/verify_upstream.sh
 
-      - name: Build Vercel web output
-        run: bash tool/build_vercel_web.sh
-
-      - name: Test interpreter
-        shell: bash
-        run: |
-          set +e
-          flutter test --no-pub --reporter json > /tmp/flutter-test.jsonl 2>&1
-          result=$?
-          cat /tmp/flutter-test.jsonl
-          python3 - <<'PY'
-          from pathlib import Path
-          import json
-
-          names = {}
-          for line in Path('/tmp/flutter-test.jsonl').read_text(errors='replace').splitlines():
-              try:
-                  event = json.loads(line)
-              except json.JSONDecodeError:
-                  continue
-              test = event.get('test') or {}
-              if event.get('type') == 'testStart':
-                  names[test.get('id')] = test.get('name', 'Cbr test')
-              if event.get('type') == 'error':
-                  name = names.get(event.get('testID'), 'Cbr test')
-                  detail = event.get('error', 'Test failed')
-                  stack = event.get('stackTrace', '')
-                  message = f'{name}: {detail} {stack}'.replace('%', '%25').replace(chr(13), ' ').replace(chr(10), ' ')
-                  print(f'::error file=test/interpreter_test.dart,title={name}::{message}')
-          PY
-          exit "$result"
+      - name: Build web
+        run: flutter build web --release

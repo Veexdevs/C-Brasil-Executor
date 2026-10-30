@@ -1,0 +1,35 @@
+name: Formatar código
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    name: dart format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Formatar
+        run: dart format lib test tool
+
+      - name: Commitar
+        run: |
+          set -euo pipefail
+          git config user.name "C Brasil Bot"
+          git config user.email "cbr-bot@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Já estava formatado."
+            exit 0
+          fi
+          git commit -m "style: aplicar dart format"
+          git push origin "HEAD:${GITHUB_REF_NAME}"

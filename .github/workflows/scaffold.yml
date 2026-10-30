@@ -1,0 +1,53 @@
+name: Gerar runners nativos
+
+# Executado manualmente: cria as pastas android/, ios/, linux/, macos/ e
+# windows/ com `flutter create` e devolve o resultado para a branch atual.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  scaffold:
+    name: flutter create + commit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Instalar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Gerar runners
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/scaffold && mkdir -p /tmp/scaffold
+          cd /tmp/scaffold
+          flutter create \
+            --project-name c_brasil_executor \
+            --org br.com.cbrasil \
+            --platforms=android,ios,linux,macos,windows \
+            app
+          cd "$GITHUB_WORKSPACE"
+          for dir in android ios linux macos windows; do
+            rm -rf "$dir"
+            mkdir -p "$dir"
+            cp -a "/tmp/scaffold/app/$dir/." "$dir/"
+          done
+
+      - name: Commitar
+        run: |
+          set -euo pipefail
+          git config user.name "C Brasil Bot"
+          git config user.email "cbr-bot@users.noreply.github.com"
+          git add android ios linux macos windows
+          if git diff --cached --quiet; then
+            echo "Nada para commitar."
+            exit 0
+          fi
+          git commit -m "chore: gerar runners nativos com flutter create"
+          git push origin "HEAD:${GITHUB_REF_NAME}"

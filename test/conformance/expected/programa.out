@@ -1,0 +1,35 @@
+
+=== CBR 1.0 ESTAVEL ===
+Digite seu nome: Digite sua idade: Digite sua nota (0 a 10): 
+Situacao: aprovado!
+Faixa etaria: menor de idade
+A idade informada e par.
+While: 1
+While: 3
+While: 4
+For range: 0 1 2 3 4 
+For range com inicio: 2 3 4 5 
+For classico: 0 1 2 3 
+
+=== RELATORIO GERAL ===
+Nome: Freud
+Idade: 12; altura: 1.39
+Soma: 22; subtracao: 10; multiplicacao: 36; divisao: 6; resto: 0
+2 elevado a 3: 8; expressao: 30
+Idade dobrada: 24; media: 8; pontos: 125
+Texto: Ola, Freud! Esta e a linguagem Cbr.
+Maiusculo: OLA, FREUD! ESTA E A LINGUAGEM CBR.
+Minusculo: ola, freud! esta e a linguagem cbr.
+Trecho: Ola, Fre
+Substituido: Ola, Freud! Esta e a linguagem C--.
+Contem nome: true; tamanho: 35
+Matematica: raiz=9, abs=15, round=4, piso=3, teto=4
+Trigonometria: seno=0, cosseno=1, tangente=0
+Log: ln=0, log10=2, exp=2.71828
+Max=20, min=12, potencia=32, limitar=12
+Array: primeiro atual=42; quantidade=6
+Array vazio apos limpar: 0
+Booleanos: estudante=true, maior_de_idade=false, nota_valida=true, aprovado=true, reprovado=false, idade_diferente=true
+Mensagem inicial: Bem-vindo ao Cbr!; array antes de limpar: 2
+
+Fim da demonstracao da Cbr 1.0!

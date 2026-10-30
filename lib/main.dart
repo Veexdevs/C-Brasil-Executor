@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 
-import 'cbr/interpreter.dart';
+import 'cbr/cbr.dart';
 
 const _background = Color(0xFF0B1118);
 const _surface = Color(0xFF101821);
@@ -206,7 +206,7 @@ class _CbrHomeState extends State<CbrHome> {
             }
           });
         },
-        inputProvider: _requestProgramInput,
+        onInput: _requestProgramInput,
       );
       if (!mounted) return;
       setState(() {
@@ -215,7 +215,7 @@ class _CbrHomeState extends State<CbrHome> {
             ? 'Processo finalizado com sucesso • ${_formatDuration(result.elapsed)}'
             : 'Processo finalizado com código ${result.exitCode} • ${_formatDuration(result.elapsed)}';
       });
-    } on CbrException catch (error) {
+    } on CbrError catch (error) {
       if (!mounted) return;
       setState(() {
         _runSuccess = false;
