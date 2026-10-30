@@ -12,7 +12,6 @@ import 'services/upstream_service.dart';
 import 'state/executor_state.dart';
 import 'theme/cbr_theme.dart';
 import 'widgets/cbr_logo.dart';
-import 'widgets/cbr_panel.dart';
 import 'widgets/settings_dialog.dart';
 
 void main() {

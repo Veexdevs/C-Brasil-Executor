@@ -187,7 +187,7 @@ class _CopyButtonState extends State<_CopyButton> {
       iconSize: 15,
       visualDensity: VisualDensity.compact,
       onPressed: () async {
-        await Clipboard.setText(widget.text);
+        await Clipboard.setData(ClipboardData(text: widget.text));
         if (!mounted) return;
         setState(() => _copied = true);
         await Future<void>.delayed(const Duration(seconds: 2));

@@ -22,13 +22,13 @@ abstract final class PlatformService {
 
   static Future<OpenedFile?> openFile() async {
     try {
-      final result = await FilePicker.platform.pickFiles(
+      final files = await FilePicker.pickFiles(
+        dialogTitle: 'Abrir programa C Brasil (.cbr)',
         type: FileType.custom,
         allowedExtensions: const ['cbr', 'txt', 'c'],
-        withData: true,
       );
-      if (result == null || result.files.isEmpty) return null;
-      final file = result.files.single;
+      if (files.isEmpty) return null;
+      final file = files.first;
       final bytes = await file.readAsBytes();
       return OpenedFile(
         file.name,
@@ -44,13 +44,17 @@ abstract final class PlatformService {
   static Future<String?> saveFile(String name, String content) async {
     try {
       final bytes = Uint8List.fromList(utf8.encode(content));
-      final path = await FilePicker.platform.saveFile(
+      final location = await FilePicker.saveFile(
+        dialogTitle: 'Salvar programa C Brasil',
         fileName: name,
+        mimeType: 'text/plain',
         type: FileType.custom,
         allowedExtensions: const ['cbr', 'txt'],
         bytes: bytes,
       );
-      return path;
+      // No navegador o download é disparado pelo próprio plugin e a
+      // localização não é informada: devolvemos o nome do arquivo.
+      return location?.toString() ?? (kIsWeb ? name : null);
     } catch (_) {
       return null;
     }

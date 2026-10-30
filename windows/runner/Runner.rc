@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "br.com.cbrasil" "\0"
-            VALUE "FileDescription", "c_brasil_executor" "\0"
+            VALUE "FileDescription", "C Brasil" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "c_brasil_executor" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 br.com.cbrasil. All rights reserved." "\0"
             VALUE "OriginalFilename", "c_brasil_executor.exe" "\0"
-            VALUE "ProductName", "c_brasil_executor" "\0"
+            VALUE "ProductName", "C Brasil" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END
