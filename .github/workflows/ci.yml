@@ -39,7 +39,7 @@ jobs:
         run: bash tool/conformance/verify_upstream.sh
 
       - name: Build web
-        run: flutter build web --release
+        run: python3 tool/ci/annotate.py flutter build web --release
 
   scaffold:
     name: Gerar runners nativos

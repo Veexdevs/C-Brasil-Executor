@@ -31,7 +31,8 @@ jobs:
         run: flutter pub get
       - name: Build web
         run: |
-          flutter build web --release --no-web-resources-cdn \
+          python3 tool/ci/annotate.py flutter build web --release \
+            --no-web-resources-cdn \
             --dart-define=CBR_UPSTREAM_COMMIT=${{ github.sha }}
       - name: Empacotar site
         run: |
@@ -60,7 +61,7 @@ jobs:
         run: flutter pub get
       - name: APK universal
         run: |
-          flutter build apk --release \
+          python3 tool/ci/annotate.py flutter build apk --release \
             --dart-define=CBR_UPSTREAM_COMMIT=${{ github.sha }}
           cp build/app/outputs/flutter-apk/app-release.apk cbrasil-android.apk
       - name: App Bundle
@@ -93,7 +94,7 @@ jobs:
         run: flutter pub get
       - name: Build
         run: |
-          flutter build linux --release \
+          python3 tool/ci/annotate.py flutter build linux --release \
             --dart-define=CBR_UPSTREAM_COMMIT=${{ github.sha }}
       - name: Empacotar
         run: |
@@ -116,7 +117,7 @@ jobs:
       - name: Dependências
         run: flutter pub get
       - name: Build
-        run: flutter build windows --release --dart-define=CBR_UPSTREAM_COMMIT=${{ github.sha }}
+        run: python3 tool/ci/annotate.py flutter build windows --release --dart-define=CBR_UPSTREAM_COMMIT=${{ github.sha }}
       - name: Empacotar
         shell: pwsh
         run: |
@@ -140,7 +141,7 @@ jobs:
       - name: Dependências
         run: flutter pub get
       - name: Build
-        run: flutter build macos --release --dart-define=CBR_UPSTREAM_COMMIT=${{ github.sha }}
+        run: python3 tool/ci/annotate.py flutter build macos --release --dart-define=CBR_UPSTREAM_COMMIT=${{ github.sha }}
       - name: Empacotar
         run: |
           ditto -c -k --sequesterRsrc --keepParent \
@@ -164,7 +165,7 @@ jobs:
         run: flutter pub get
       - name: Build sem assinatura
         run: |
-          flutter build ios --release --no-codesign \
+          python3 tool/ci/annotate.py flutter build ios --release --no-codesign \
             --dart-define=CBR_UPSTREAM_COMMIT=${{ github.sha }}
       - name: Empacotar Payload
         run: |
