@@ -95,9 +95,7 @@ jobs:
           else
             BASE_HREF="/${GITHUB_REPOSITORY#*/}/"
           fi
-          flutter build web --release \
-            --base-href "$BASE_HREF" \
-            --dart-define=CBR_UPSTREAM_COMMIT=${{ needs.detect.outputs.sha }}
+          flutter build web --release --base-href "$BASE_HREF"
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
@@ -139,7 +137,7 @@ jobs:
         shell: bash
         run: |
           set +e
-          flutter build apk --release --dart-define=CBR_UPSTREAM_COMMIT=${{ needs.detect.outputs.sha }} > /tmp/android-apk-build.log 2>&1
+          flutter build apk --release > /tmp/android-apk-build.log 2>&1
           result=$?
           tail -n 30 /tmp/android-apk-build.log
           if [[ "$result" -ne 0 ]]; then
@@ -160,11 +158,11 @@ jobs:
       - name: Build Android App Bundle
         id: build_aab
         continue-on-error: true
-        run: flutter build appbundle --release --dart-define=CBR_UPSTREAM_COMMIT=${{ needs.detect.outputs.sha }}
+        run: flutter build appbundle --release
       - name: Build Linux desktop
         id: build_linux
         continue-on-error: true
-        run: flutter build linux --release --dart-define=CBR_UPSTREAM_COMMIT=${{ needs.detect.outputs.sha }}
+        run: flutter build linux --release
       - name: Package Linux tarball and Debian package
         id: package_linux
         if: steps.build_linux.outcome == 'success'
@@ -278,7 +276,7 @@ jobs:
           flutter create --platforms=windows --project-name=c_brasil_executor .
           flutter pub get
       - name: Build Windows release
-        run: flutter build windows --release --dart-define=CBR_UPSTREAM_COMMIT=${{ needs.detect.outputs.sha }}
+        run: flutter build windows --release
       - name: Package executable and runtime files
         shell: pwsh
         run: Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath cbrasil-windows-x64.zip
@@ -307,7 +305,7 @@ jobs:
           flutter create --platforms=ios,macos --project-name=c_brasil_executor .
           flutter pub get
       - name: Build unsigned iOS app
-        run: flutter build ios --release --no-codesign --dart-define=CBR_UPSTREAM_COMMIT=${{ needs.detect.outputs.sha }}
+        run: flutter build ios --release --no-codesign
       - name: Package unsigned IPA
         shell: bash
         run: |
@@ -315,7 +313,7 @@ jobs:
           cp -R build/ios/iphoneos/Runner.app /tmp/cbr-ipa/Payload/
           (cd /tmp/cbr-ipa && zip -qr "$GITHUB_WORKSPACE/cbrasil-ios-unsigned.ipa" Payload)
       - name: Build macOS app
-        run: flutter build macos --release --dart-define=CBR_UPSTREAM_COMMIT=${{ needs.detect.outputs.sha }}
+        run: flutter build macos --release
       - name: Package macOS app
         run: ditto -c -k --sequesterRsrc --keepParent build/macos/Build/Products/Release/c_brasil_executor.app cbrasil-macos.zip
       - name: Upload unsigned iOS IPA

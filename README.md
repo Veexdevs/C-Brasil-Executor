@@ -1,6 +1,6 @@
-# C Brasil Executor (CBR)
+# C Brasil (cbr)
 
-Editor e executor multiplataforma da linguagem **C Brasil (CBR)**, construído em Dart + Flutter. A identidade visual provisória usa verde, amarelo e azul; a marca está isolada no widget `_BrandMark` para a logo final poder substituí-la sem refazer as telas.
+Editor e executor multiplataforma da linguagem C Brasil, construído em Dart e Flutter. A interface usa a marca oficial em `assets/images/cbrasil-logo.png` e mantém o foco no editor.
 
 ## O que já funciona
 
@@ -46,7 +46,7 @@ Para distribuir iOS é necessário assinar o app com certificados e provisioning
 - `.github/workflows/upstream-watch.yml` compila Web, APK/AAB, iOS, Windows, macOS e Linux a cada push (inclusive branches de teste) e consulta `https://github.com/vorgweb/C-Brasil` a cada seis horas. Quando há uma revisão upstream nova, recompila todas as plataformas e cria um pré-lançamento com os bundles. O GitHub Pages é publicado apenas a partir de `main` ou da verificação agendada; tags `v*` publicam um release estável.
 - `vercel.json` configura o build Web do Flutter para Vercel: `tool/build_vercel_web.sh` instala/cacheia o SDK Flutter estável e gera `build/web` para publicação estática. O primeiro build pode demorar mais por baixar o SDK.
 - Para que `https://c-brasil-executor.vercel.app/` seja público, desative **Vercel Authentication/Deployment Protection** para o domínio `.vercel.app` em **Project Settings → Deployment Protection**. A configuração de proteção fica na conta Vercel, não no repositório.
-- No repositório, selecione **Settings → Pages → Build and deployment → GitHub Actions** para ativar o destino do Pages uma vez. O app consulta a revisão upstream ao abrir e periodicamente enquanto está aberto.
+- No repositório, selecione **Settings → Pages → Build and deployment → GitHub Actions** para ativar o destino do Pages uma vez. O monitor de upstream cuida das novas compilações; o app não exibe status do GitHub.
 - Os bundles também ficam nos artefatos da execução na aba **Actions**. O monitor consulta o endpoint público da API do GitHub; para o deploy e releases, usa as permissões `pages: write`, `id-token: write` e `contents: write`.
 
 O GitHub Pages precisa estar habilitado nas configurações do repositório para a primeira publicação. O monitor atualiza o site e publica novos artefatos quando encontra commits upstream; apps já instalados não se reinstalam sozinhos (a pessoa precisa instalar o novo pacote). O workflow de iOS gera um `.ipa` não assinado, pois certificados Apple não são incluídos no projeto.

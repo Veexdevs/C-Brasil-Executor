@@ -1,32 +1,25 @@
-import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:http/http.dart' as http;
 
 import 'cbr/interpreter.dart';
 
-const _background = Color(0xFF0B1118);
-const _surface = Color(0xFF101821);
-const _surfaceRaised = Color(0xFF151F2A);
-const _border = Color(0xFF25313D);
-const _textPrimary = Color(0xFFEAF0F6);
-const _textSecondary = Color(0xFF9AA9B8);
-const _green = Color(0xFF20C77A);
-const _greenBright = Color(0xFF45E39A);
-const _yellow = Color(0xFFFFD166);
-const _blue = Color(0xFF52B7F5);
-const _compiledUpstreamRevision = String.fromEnvironment(
-  'CBR_UPSTREAM_COMMIT',
-  defaultValue: '935b21d8a482f8073dd613a6901894fb6530c1d4',
-);
+const _background = Color(0xFF0D1117);
+const _surface = Color(0xFF161B22);
+const _surfaceRaised = Color(0xFF1C2128);
+const _border = Color(0xFF30363D);
+const _textPrimary = Color(0xFFE6EDF3);
+const _textSecondary = Color(0xFF8B949E);
+const _green = Color(0xFF2DA44E);
+const _greenBright = Color(0xFF3FB950);
+const _yellow = Color(0xFFD29922);
+const _blue = Color(0xFF58A6FF);
 
 const _starterProgram = '''inicio
 escreva("Olá, C Brasil!")
-escreva("Esta é uma linguagem poderosa.")
 
 inteiro idade
 idade = 18
@@ -45,8 +38,7 @@ retorne 0
 fim
 ''';
 
-const _upstreamProgram = '''// Exemplo compatível com o repositório vorgweb/C-Brasil (Cbr 0.6)
-function dobro(x) {
+const _functionsProgram = '''function dobro(x) {
     return x * 2
 }
 
@@ -71,8 +63,7 @@ for i in range(1, 6) {
 end(0)
 ''';
 
-const _inputProgram = '''// O executor abre uma caixa de entrada quando encontra scan().
-idade = 0
+const _inputProgram = '''idade = 0
 scan("Qual é a sua idade? ", {int.idade})
 if (idade >= 18) {
     printf("Acesso liberado.\\n")
@@ -87,9 +78,7 @@ void main() {
 }
 
 class CbrApp extends StatelessWidget {
-  const CbrApp({super.key, this.autoCheckUpstream = true});
-
-  final bool autoCheckUpstream;
+  const CbrApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -104,7 +93,7 @@ class CbrApp extends StatelessWidget {
       error: _blue,
     );
     return MaterialApp(
-      title: 'C Brasil — Executor CBR',
+      title: 'C Brasil (cbr)',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
@@ -119,24 +108,22 @@ class CbrApp extends StatelessWidget {
           backgroundColor: _surfaceRaised,
           contentTextStyle: const TextStyle(color: _textPrimary),
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
         tooltipTheme: const TooltipThemeData(
           decoration: BoxDecoration(color: _surfaceRaised),
           textStyle: TextStyle(color: _textPrimary),
         ),
       ),
-      home: CbrHome(autoCheckUpstream: autoCheckUpstream),
+      home: const CbrHome(),
     );
   }
 }
 
-enum _AppPage { executor, documentation, examples, about }
+enum _AppPage { executor, examples }
 
 class CbrHome extends StatefulWidget {
-  const CbrHome({super.key, this.autoCheckUpstream = true});
-
-  final bool autoCheckUpstream;
+  const CbrHome({super.key});
 
   @override
   State<CbrHome> createState() => _CbrHomeState();
@@ -146,8 +133,6 @@ class _CbrHomeState extends State<CbrHome> {
   late final _SyntaxController _editorController;
   final ScrollController _editorScrollController = ScrollController();
   final ScrollController _consoleScrollController = ScrollController();
-  final _UpstreamStatus _upstreamStatus = _UpstreamStatus();
-  Timer? _upstreamTimer;
 
   _AppPage _page = _AppPage.executor;
   String _filename = 'main.cbr';
@@ -162,13 +147,6 @@ class _CbrHomeState extends State<CbrHome> {
     super.initState();
     _editorController = _SyntaxController(text: _starterProgram);
     _editorController.addListener(_onEditorChanged);
-    if (widget.autoCheckUpstream) {
-      _upstreamStatus.refresh();
-      _upstreamTimer = Timer.periodic(
-        const Duration(minutes: 30),
-        (_) => _upstreamStatus.refresh(),
-      );
-    }
   }
 
   void _onEditorChanged() {
@@ -177,8 +155,6 @@ class _CbrHomeState extends State<CbrHome> {
 
   @override
   void dispose() {
-    _upstreamTimer?.cancel();
-    _upstreamStatus.dispose();
     _editorController.removeListener(_onEditorChanged);
     _editorController.dispose();
     _editorScrollController.dispose();
@@ -212,8 +188,8 @@ class _CbrHomeState extends State<CbrHome> {
       setState(() {
         _runSuccess = result.exitCode == 0;
         _runMessage = result.exitCode == 0
-            ? 'Processo finalizado com sucesso • ${_formatDuration(result.elapsed)}'
-            : 'Processo finalizado com código ${result.exitCode} • ${_formatDuration(result.elapsed)}';
+            ? 'Executado em ${_formatDuration(result.elapsed)}'
+            : 'Código ${result.exitCode} • ${_formatDuration(result.elapsed)}';
       });
     } on CbrException catch (error) {
       if (!mounted) return;
@@ -395,66 +371,50 @@ class _CbrHomeState extends State<CbrHome> {
     switch (_page) {
       case _AppPage.executor:
         return _buildExecutor(width);
-      case _AppPage.documentation:
-        return _DocumentationPage(onOpenExample: () => _loadExample(_upstreamProgram, filename: 'cbr-06.cbr'));
       case _AppPage.examples:
         return _ExamplesPage(
           onOpenPortuguese: () => _loadExample(_starterProgram, filename: 'primeiro-programa.cbr'),
-          onOpenUpstream: () => _loadExample(_upstreamProgram, filename: 'cbr-06.cbr'),
+          onOpenFunctions: () => _loadExample(_functionsProgram, filename: 'funcoes.cbr'),
           onOpenInput: () => _loadExample(_inputProgram, filename: 'entrada.cbr'),
         );
-      case _AppPage.about:
-        return _AboutPage(status: _upstreamStatus, onRefresh: _upstreamStatus.refresh);
     }
   }
 
   Widget _buildExecutor(double width) {
     final isWide = width >= 920;
+    final editor = _EditorPanel(
+      controller: _editorController,
+      scrollController: _editorScrollController,
+      filename: _filename,
+      running: _running,
+      fontSize: _fontSize,
+      compact: !isWide,
+      onOpen: _openFile,
+      onSave: _saveFile,
+      onRun: _runProgram,
+      onClose: _newFile,
+    );
+    final console = _ConsolePanel(
+      output: _output,
+      scrollController: _consoleScrollController,
+      message: _runMessage,
+      success: _runSuccess,
+      running: _running,
+      onClear: _clearConsole,
+    );
+
     if (isWide) {
       return Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1480),
+          constraints: const BoxConstraints(maxWidth: 1560),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(34, 22, 34, 12),
-            child: Column(
+            padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _HeroSection(status: _upstreamStatus, onRefresh: _upstreamStatus.refresh),
-                const SizedBox(height: 20),
-                Expanded(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Expanded(
-                        flex: 6,
-                        child: _EditorPanel(
-                          controller: _editorController,
-                          scrollController: _editorScrollController,
-                          filename: _filename,
-                          running: _running,
-                          fontSize: _fontSize,
-                          onOpen: _openFile,
-                          onSave: _saveFile,
-                          onRun: _runProgram,
-                          onClose: _newFile,
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        flex: 4,
-                        child: _ConsolePanel(
-                          output: _output,
-                          scrollController: _consoleScrollController,
-                          message: _runMessage,
-                          success: _runSuccess,
-                          running: _running,
-                          onClear: _clearConsole,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-                const _Footer(),
+                Expanded(flex: 6, child: editor),
+                const SizedBox(width: 12),
+                Expanded(flex: 4, child: console),
               ],
             ),
           ),
@@ -463,42 +423,15 @@ class _CbrHomeState extends State<CbrHome> {
     }
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 18, 16, 24),
+      padding: const EdgeInsets.all(16),
       children: [
-        _HeroSection(status: _upstreamStatus, onRefresh: _upstreamStatus.refresh, compact: true),
-        const SizedBox(height: 18),
-        SizedBox(
-          height: 510,
-          child: _EditorPanel(
-            controller: _editorController,
-            scrollController: _editorScrollController,
-            filename: _filename,
-            running: _running,
-            fontSize: _fontSize,
-            compact: true,
-            onOpen: _openFile,
-            onSave: _saveFile,
-            onRun: _runProgram,
-            onClose: _newFile,
-          ),
-        ),
-        const SizedBox(height: 14),
-        SizedBox(
-          height: 320,
-          child: _ConsolePanel(
-            output: _output,
-            scrollController: _consoleScrollController,
-            message: _runMessage,
-            success: _runSuccess,
-            running: _running,
-            onClear: _clearConsole,
-          ),
-        ),
-        const SizedBox(height: 14),
-        const _Footer(),
+        SizedBox(height: 510, child: editor),
+        const SizedBox(height: 12),
+        SizedBox(height: 320, child: console),
       ],
     );
   }
+
 }
 
 class _TopBar extends StatelessWidget {
@@ -514,54 +447,50 @@ class _TopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final width = MediaQuery.sizeOf(context).width;
-    final compact = width < 740;
+    final compact = MediaQuery.sizeOf(context).width < 720;
     return Container(
-      height: 68,
-      padding: EdgeInsets.symmetric(horizontal: compact ? 16 : 38),
+      height: 64,
+      padding: EdgeInsets.symmetric(horizontal: compact ? 14 : 26),
       decoration: const BoxDecoration(
-        color: Color(0xFF0A1016),
-        border: Border(bottom: BorderSide(color: _border, width: 0.7)),
+        color: _surface,
+        border: Border(bottom: BorderSide(color: _border)),
       ),
       child: Row(
         children: [
           const _BrandMark(size: 40),
-          const SizedBox(width: 12),
+          const SizedBox(width: 9),
           const Text(
-            'C BRASIL',
+            'C Brasil',
             style: TextStyle(
               color: _textPrimary,
-              fontSize: 16,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 2.2,
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.2,
             ),
           ),
-          const SizedBox(width: 8),
-          const Text('(CBR)', style: TextStyle(color: _textSecondary, fontSize: 12)),
+          const SizedBox(width: 6),
+          const Text('(cbr)', style: TextStyle(color: _textSecondary, fontSize: 12)),
           const Spacer(),
-          if (!compact) ...[
-            _NavButton(label: 'Executor', page: _AppPage.executor, selected: selected, onSelect: onSelect),
-            _NavButton(label: 'Documentação', page: _AppPage.documentation, selected: selected, onSelect: onSelect),
-            _NavButton(label: 'Exemplos', page: _AppPage.examples, selected: selected, onSelect: onSelect),
-            _NavButton(label: 'Sobre', page: _AppPage.about, selected: selected, onSelect: onSelect),
-            const SizedBox(width: 12),
-          ] else ...[
+          if (compact)
             PopupMenuButton<_AppPage>(
-              tooltip: 'Abrir navegação',
+              tooltip: 'Navegação',
               icon: const Icon(Icons.menu_rounded, color: _textSecondary),
               onSelected: onSelect,
               itemBuilder: (context) => const [
-                PopupMenuItem(value: _AppPage.executor, child: Text('Executor')),
-                PopupMenuItem(value: _AppPage.documentation, child: Text('Documentação')),
+                PopupMenuItem(value: _AppPage.executor, child: Text('Editor')),
                 PopupMenuItem(value: _AppPage.examples, child: Text('Exemplos')),
-                PopupMenuItem(value: _AppPage.about, child: Text('Sobre')),
               ],
-            ),
+            )
+          else ...[
+            _NavButton(label: 'Editor', page: _AppPage.executor, selected: selected, onSelect: onSelect),
+            const SizedBox(width: 4),
+            _NavButton(label: 'Exemplos', page: _AppPage.examples, selected: selected, onSelect: onSelect),
           ],
+          const SizedBox(width: 6),
           IconButton(
-            tooltip: 'Configurações do editor',
+            tooltip: 'Configurações',
             onPressed: onSettings,
-            icon: const Icon(Icons.tune_rounded, size: 20, color: _textSecondary),
+            icon: const Icon(Icons.settings_outlined, size: 20, color: _textSecondary),
           ),
         ],
       ),
@@ -580,198 +509,31 @@ class _NavButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final active = page == selected;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 5),
-      child: TextButton(
-        onPressed: () => onSelect(page),
-        style: TextButton.styleFrom(
-          foregroundColor: active ? _greenBright : _textSecondary,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(label, style: TextStyle(fontSize: 13, fontWeight: active ? FontWeight.w700 : FontWeight.w500)),
-            const SizedBox(height: 6),
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 160),
-              width: active ? 34 : 0,
-              height: 2,
-              decoration: BoxDecoration(color: _green, borderRadius: BorderRadius.circular(2)),
-            ),
-          ],
-        ),
+    return TextButton(
+      onPressed: () => onSelect(page),
+      style: TextButton.styleFrom(
+        foregroundColor: active ? _greenBright : _textSecondary,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
       ),
+      child: Text(label, style: TextStyle(fontSize: 13, fontWeight: active ? FontWeight.w600 : FontWeight.w400)),
     );
   }
 }
 
 class _BrandMark extends StatelessWidget {
   const _BrandMark({this.size = 42});
+
   final double size;
 
   @override
   Widget build(BuildContext context) {
-    // Marca provisória substituível pela logo final quando ela estiver pronta.
-    return Container(
+    return Image.asset(
+      'assets/images/cbrasil-logo.png',
       width: size,
       height: size,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [_green, Color(0xFF168AD0)],
-        ),
-        borderRadius: BorderRadius.circular(size * 0.2),
-        boxShadow: [BoxShadow(color: _green.withValues(alpha: 0.18), blurRadius: 16, offset: const Offset(0, 4))],
-      ),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Text(
-            'C',
-            style: TextStyle(color: Colors.white, fontSize: size * 0.72, height: 1, fontWeight: FontWeight.w900),
-          ),
-          Positioned(
-            right: size * 0.12,
-            top: size * 0.11,
-            child: Container(
-              width: size * 0.12,
-              height: size * 0.12,
-              decoration: const BoxDecoration(color: _yellow, shape: BoxShape.circle),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _HeroSection extends StatelessWidget {
-  const _HeroSection({required this.status, required this.onRefresh, this.compact = false});
-
-  final _UpstreamStatus status;
-  final VoidCallback onRefresh;
-  final bool compact;
-
-  @override
-  Widget build(BuildContext context) {
-    final heading = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Wrap(
-          crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: 12,
-          children: [
-            Text(
-              'C Brasil',
-              style: TextStyle(
-                color: _textPrimary,
-                fontSize: compact ? 32 : 38,
-                fontWeight: FontWeight.w800,
-                letterSpacing: -1.1,
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-              decoration: BoxDecoration(
-                color: _green.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(7),
-                border: Border.all(color: _green.withValues(alpha: 0.3)),
-              ),
-              child: const Text('CBR', style: TextStyle(color: _greenBright, fontSize: 13, fontWeight: FontWeight.w800)),
-            ),
-          ],
-        ),
-        const SizedBox(height: 7),
-        const Text(
-          'Uma linguagem simples, moderna e poderosa.',
-          style: TextStyle(color: _textSecondary, fontSize: 15, fontWeight: FontWeight.w500),
-        ),
-        const SizedBox(height: 3),
-        const Text(
-          'Escreva, execute e veja o resultado em tempo real.',
-          style: TextStyle(color: Color(0xFF7F8D9B), fontSize: 13),
-        ),
-      ],
-    );
-
-    final badge = _UpstreamBadge(status: status, onRefresh: onRefresh);
-    if (compact) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [heading, const SizedBox(height: 14), badge],
-      );
-    }
-    return Row(
-      children: [
-        Expanded(child: heading),
-        const SizedBox(width: 20),
-        badge,
-      ],
-    );
-  }
-}
-
-class _UpstreamBadge extends StatelessWidget {
-  const _UpstreamBadge({required this.status, required this.onRefresh});
-
-  final _UpstreamStatus status;
-  final VoidCallback onRefresh;
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: status,
-      builder: (context, _) {
-        final revision = status.revision;
-        final summary = status.checking
-            ? 'Verificando repositório…'
-            : status.available
-                ? 'Repositório conectado'
-                : 'Executor local • Cbr 0.6';
-        return Container(
-          constraints: const BoxConstraints(minWidth: 245, maxWidth: 318),
-          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
-          decoration: BoxDecoration(
-            color: _surface,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: _green.withValues(alpha: 0.38)),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(color: _green.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(9)),
-                child: const Icon(Icons.cloud_sync_rounded, color: _greenBright, size: 20),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(summary, style: const TextStyle(color: _textPrimary, fontSize: 12, fontWeight: FontWeight.w700)),
-                    const SizedBox(height: 3),
-                    Text(
-                      'vorgweb/C-Brasil  •  ${revision.substring(0, revision.length > 7 ? 7 : revision.length)}',
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: _textSecondary, fontSize: 10.5),
-                    ),
-                  ],
-                ),
-              ),
-              IconButton(
-                tooltip: 'Verificar atualizações',
-                visualDensity: VisualDensity.compact,
-                onPressed: status.checking ? null : onRefresh,
-                icon: Icon(Icons.refresh_rounded, size: 17, color: status.checking ? _textSecondary : _greenBright),
-              ),
-            ],
-          ),
-        );
-      },
+      fit: BoxFit.contain,
+      semanticLabel: 'Logo C Brasil',
     );
   }
 }
@@ -805,10 +567,9 @@ class _EditorPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF0C1219),
-        borderRadius: BorderRadius.circular(13),
+        color: _surface,
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: _border),
-        boxShadow: const [BoxShadow(color: Color(0x18000000), blurRadius: 25, offset: Offset(0, 10))],
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -865,14 +626,11 @@ class _EditorPanel extends StatelessWidget {
             height: 28,
             padding: const EdgeInsets.symmetric(horizontal: 12),
             decoration: const BoxDecoration(
-              color: Color(0xFF0A1016),
-              border: Border(top: BorderSide(color: _border, width: 0.6)),
+              color: _surface,
+              border: Border(top: BorderSide(color: _border)),
             ),
             child: Row(
               children: [
-                const Icon(Icons.circle, size: 7, color: _green),
-                const SizedBox(width: 7),
-                const Text('CBR 0.6', style: TextStyle(color: _textSecondary, fontSize: 10)),
                 const Spacer(),
                 Text('${controller.text.split('\n').length} linhas', style: const TextStyle(color: _textSecondary, fontSize: 10)),
                 const SizedBox(width: 12),
@@ -917,7 +675,7 @@ class _EditorToolbar extends StatelessWidget {
               constraints: BoxConstraints(maxWidth: compact ? 145 : 210),
               padding: const EdgeInsets.only(left: 10, right: 5),
               height: 38,
-              decoration: BoxDecoration(color: _surfaceRaised, borderRadius: BorderRadius.circular(9)),
+              decoration: BoxDecoration(color: _surfaceRaised, borderRadius: BorderRadius.circular(6)),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -979,7 +737,7 @@ class _ToolbarButton extends StatelessWidget {
         side: const BorderSide(color: _border),
         padding: const EdgeInsets.symmetric(horizontal: 12),
         minimumSize: const Size(0, 36),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
       ),
       icon: Icon(icon, size: 16),
       label: Text(label, style: const TextStyle(fontSize: 12)),
@@ -1003,7 +761,7 @@ class _RunButton extends StatelessWidget {
         disabledBackgroundColor: _green.withValues(alpha: 0.55),
         padding: EdgeInsets.symmetric(horizontal: compact ? 11 : 17),
         minimumSize: Size(0, compact ? 36 : 39),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
       ),
       icon: running
           ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF07150E)))
@@ -1080,8 +838,8 @@ class _ConsolePanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF0C1219),
-        borderRadius: BorderRadius.circular(13),
+        color: _surface,
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: _border),
       ),
       clipBehavior: Clip.antiAlias,
@@ -1097,11 +855,11 @@ class _ConsolePanel extends StatelessWidget {
                   const SizedBox(width: 9),
                   const Text('Console', style: TextStyle(color: _textPrimary, fontWeight: FontWeight.w700, fontSize: 13)),
                   const Spacer(),
-                  TextButton.icon(
+                  IconButton(
+                    tooltip: 'Limpar console',
                     onPressed: onClear,
-                    style: TextButton.styleFrom(foregroundColor: _greenBright, visualDensity: VisualDensity.compact),
-                    icon: const Icon(Icons.delete_outline_rounded, size: 17),
-                    label: const Text('Limpar', style: TextStyle(fontSize: 12)),
+                    visualDensity: VisualDensity.compact,
+                    icon: const Icon(Icons.delete_outline_rounded, size: 18, color: _textSecondary),
                   ),
                 ],
               ),
@@ -1118,7 +876,7 @@ class _ConsolePanel extends StatelessWidget {
                 child: Align(
                   alignment: Alignment.topLeft,
                   child: SelectableText(
-                    output.isEmpty ? (running ? 'Executando o programa…' : 'A saída do seu programa aparecerá aqui.') : output,
+                    output.isEmpty ? (running ? 'Executando…' : '') : output,
                     style: TextStyle(
                       color: output.isEmpty ? const Color(0xFF738292) : const Color(0xFFD6E0EA),
                       fontFamily: 'monospace',
@@ -1161,396 +919,76 @@ class _ConsolePanel extends StatelessWidget {
   }
 }
 
-class _Footer extends StatelessWidget {
-  const _Footer();
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 30,
-      child: Row(
-        children: [
-          const Text('C Brasil (CBR)', style: TextStyle(color: _textSecondary, fontSize: 10.5)),
-          const SizedBox(width: 14),
-          const Text('Dart + Flutter', style: TextStyle(color: Color(0xFF71808F), fontSize: 10.5)),
-          const Spacer(),
-          Container(width: 7, height: 7, decoration: const BoxDecoration(color: _green, shape: BoxShape.circle)),
-          const SizedBox(width: 7),
-          const Text('Executor local', style: TextStyle(color: _textSecondary, fontSize: 10.5)),
-        ],
-      ),
-    );
-  }
-}
-
-class _DocumentationPage extends StatelessWidget {
-  const _DocumentationPage({required this.onOpenExample});
-  final VoidCallback onOpenExample;
-
-  @override
-  Widget build(BuildContext context) {
-    return _InfoScaffold(
-      eyebrow: 'GUIA RÁPIDO',
-      title: 'Aprenda Cbr',
-      subtitle: 'O executor implementa a sintaxe do repositório C Brasil e inclui atalhos de escrita em português nos exemplos.',
-      children: [
-        _DocCard(
-          icon: Icons.play_circle_outline_rounded,
-          accent: _green,
-          title: 'Comece com um programa',
-          code: 'nome = "Brasil"\nprintf("Olá, {str.nome}!\\n")\nend(0)',
-          description: 'Atribua valores com = e mostre texto com printf. As quebras de linha são escritas como \\n.',
-        ),
-        _DocCard(
-          icon: Icons.alt_route_rounded,
-          accent: _blue,
-          title: 'Condições e repetição',
-          code: 'if (idade >= 18) {\n    printf("Maior de idade\\n")\n} else {\n    printf("Menor de idade\\n")\n}\n\nfor i in range(1, 6) {\n    printf("{int.i}\\n")\n}',
-          description: 'Há suporte para if/else, while, range, for clássico, break e continue.',
-        ),
-        _DocCard(
-          icon: Icons.data_object_rounded,
-          accent: _yellow,
-          title: 'Valores, arrays e funções',
-          code: 'function dobro(x) {\n    return x * 2\n}\n\ndados = [12, "Cbr", true, 3.14]\nresultado = dobro(5)',
-          description: 'Tipos são inferidos. Funções numéricas aceitam um parâmetro e retornam um número; arrays podem misturar valores.',
-        ),
-        _DocCard(
-          icon: Icons.keyboard_alt_outlined,
-          accent: _green,
-          title: 'Entrada do teclado',
-          code: 'idade = 0\nscan("Sua idade: ", {int.idade})',
-          description: 'scan() abre uma caixa de entrada durante a execução. Marcadores aceitos: str, int, float e bool.',
-        ),
-        const SizedBox(height: 18),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: FilledButton.icon(
-            onPressed: onOpenExample,
-            icon: const Icon(Icons.code_rounded),
-            label: const Text('Abrir exemplo do Cbr 0.6 no editor'),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _DocCard extends StatelessWidget {
-  const _DocCard({required this.icon, required this.accent, required this.title, required this.code, required this.description});
-
-  final IconData icon;
-  final Color accent;
-  final String title;
-  final String code;
-  final String description;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(17),
-      decoration: BoxDecoration(color: _surface, borderRadius: BorderRadius.circular(13), border: Border.all(color: _border)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, color: accent, size: 19),
-              const SizedBox(width: 9),
-              Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(13),
-            decoration: BoxDecoration(color: const Color(0xFF080D12), borderRadius: BorderRadius.circular(9)),
-            child: SelectableText(code, style: const TextStyle(fontFamily: 'monospace', fontSize: 12, height: 1.6, color: _textPrimary)),
-          ),
-          const SizedBox(height: 10),
-          Text(description, style: const TextStyle(color: _textSecondary, fontSize: 12.5, height: 1.5)),
-        ],
-      ),
-    );
-  }
-}
-
 class _ExamplesPage extends StatelessWidget {
-  const _ExamplesPage({required this.onOpenPortuguese, required this.onOpenUpstream, required this.onOpenInput});
+  const _ExamplesPage({
+    required this.onOpenPortuguese,
+    required this.onOpenFunctions,
+    required this.onOpenInput,
+  });
 
   final VoidCallback onOpenPortuguese;
-  final VoidCallback onOpenUpstream;
+  final VoidCallback onOpenFunctions;
   final VoidCallback onOpenInput;
-
-  @override
-  Widget build(BuildContext context) {
-    return _InfoScaffold(
-      eyebrow: 'EXEMPLOS',
-      title: 'Escolha um ponto de partida',
-      subtitle: 'Abra um programa no editor, altere o código e pressione Executar.',
-      children: [
-        _ExampleCard(
-          accent: _green,
-          icon: Icons.waving_hand_outlined,
-          title: 'Primeiro programa',
-          description: 'Exemplo guiado em português: saída, variável inteira, condição e contagem de 1 a 5.',
-          tags: const ['iniciante', 'Português'],
-          onOpen: onOpenPortuguese,
-        ),
-        _ExampleCard(
-          accent: _blue,
-          icon: Icons.functions_rounded,
-          title: 'Recursos do Cbr 0.6',
-          description: 'Função numérica, potência, array misto, interpolação e repetição com range.',
-          tags: const ['Cbr 0.6', 'repositório'],
-          onOpen: onOpenUpstream,
-        ),
-        _ExampleCard(
-          accent: _yellow,
-          icon: Icons.keyboard_alt_outlined,
-          title: 'Entrada com scan()',
-          description: 'Receba um inteiro do usuário e escolha uma resposta com if/else.',
-          tags: const ['entrada', 'interativo'],
-          onOpen: onOpenInput,
-        ),
-      ],
-    );
-  }
-}
-
-class _ExampleCard extends StatelessWidget {
-  const _ExampleCard({required this.accent, required this.icon, required this.title, required this.description, required this.tags, required this.onOpen});
-
-  final Color accent;
-  final IconData icon;
-  final String title;
-  final String description;
-  final List<String> tags;
-  final VoidCallback onOpen;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(color: _surface, borderRadius: BorderRadius.circular(13), border: Border.all(color: _border)),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 43,
-            height: 43,
-            decoration: BoxDecoration(color: accent.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(11)),
-            child: Icon(icon, color: accent, size: 21),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
-                const SizedBox(height: 6),
-                Text(description, style: const TextStyle(color: _textSecondary, height: 1.45, fontSize: 12.5)),
-                const SizedBox(height: 10),
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: tags.map((tag) => _Tag(label: tag, color: accent)).toList(),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          IconButton.filledTonal(
-            tooltip: 'Abrir no editor',
-            onPressed: onOpen,
-            style: IconButton.styleFrom(foregroundColor: accent, backgroundColor: accent.withValues(alpha: 0.12)),
-            icon: const Icon(Icons.arrow_forward_rounded),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _Tag extends StatelessWidget {
-  const _Tag({required this.label, required this.color});
-  final String label;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(color: color.withValues(alpha: 0.09), borderRadius: BorderRadius.circular(6)),
-      child: Text(label, style: TextStyle(color: color, fontSize: 10.5, fontWeight: FontWeight.w600)),
-    );
-  }
-}
-
-class _AboutPage extends StatelessWidget {
-  const _AboutPage({required this.status, required this.onRefresh});
-  final _UpstreamStatus status;
-  final VoidCallback onRefresh;
-
-  @override
-  Widget build(BuildContext context) {
-    return _InfoScaffold(
-      eyebrow: 'SOBRE O PROJETO',
-      title: 'Feito para programar em Cbr',
-      subtitle: 'O C Brasil Executor é um editor e interpretador local, gratuito e multiplataforma, desenvolvido em Dart + Flutter.',
-      children: [
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14),
-            gradient: const LinearGradient(colors: [Color(0xFF11271F), Color(0xFF10202B)]),
-            border: Border.all(color: _green.withValues(alpha: 0.24)),
-          ),
-          child: Row(
-            children: [
-              const _BrandMark(size: 54),
-              const SizedBox(width: 16),
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('C Brasil (CBR)', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
-                    SizedBox(height: 5),
-                    Text('Código. Simples. Poderoso.', style: TextStyle(color: _textSecondary, fontSize: 13)),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 14),
-        _UpstreamInfoCard(status: status, onRefresh: onRefresh),
-        const SizedBox(height: 14),
-        const _FeatureList(),
-      ],
-    );
-  }
-}
-
-class _UpstreamInfoCard extends StatelessWidget {
-  const _UpstreamInfoCard({required this.status, required this.onRefresh});
-  final _UpstreamStatus status;
-  final VoidCallback onRefresh;
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: status,
-      builder: (context, _) => Container(
-        padding: const EdgeInsets.all(17),
-        decoration: BoxDecoration(color: _surface, borderRadius: BorderRadius.circular(13), border: Border.all(color: _border)),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.hub_outlined, color: _blue, size: 19),
-                const SizedBox(width: 9),
-                const Expanded(child: Text('Repositório de origem', style: TextStyle(fontWeight: FontWeight.w700))),
-                IconButton(
-                  tooltip: 'Verificar agora',
-                  onPressed: status.checking ? null : onRefresh,
-                  icon: const Icon(Icons.refresh_rounded, size: 18),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            const SelectableText('github.com/vorgweb/C-Brasil', style: TextStyle(color: _blue, fontFamily: 'monospace', fontSize: 12)),
-            const SizedBox(height: 8),
-            Text(
-              status.checking
-                  ? 'Consultando a revisão mais recente…'
-                  : status.available
-                      ? 'Última revisão consultada: ${status.revision.substring(0, status.revision.length > 12 ? 12 : status.revision.length)}${status.checkedAt == null ? '' : ' • ${TimeOfDay.fromDateTime(status.checkedAt!).format(context)}'}'
-                      : 'Sem conexão no momento${status.error == null ? '' : ': ${status.error}'} O executor continua funcionando localmente.',
-              style: const TextStyle(color: _textSecondary, fontSize: 12, height: 1.5),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'O app verifica o repositório periodicamente. As mudanças do núcleo são acompanhadas pelo fluxo de atualização do projeto; recursos novos da linguagem precisam ser portados para o interpretador Dart.',
-              style: TextStyle(color: Color(0xFF7F8D9B), fontSize: 11.5, height: 1.55),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _FeatureItem {
-  const _FeatureItem(this.title, this.icon, this.color);
-
-  final String title;
-  final IconData icon;
-  final Color color;
-}
-
-class _FeatureList extends StatelessWidget {
-  const _FeatureList();
-
-  @override
-  Widget build(BuildContext context) {
-    const features = <_FeatureItem>[
-      _FeatureItem('Editor com destaque de sintaxe', Icons.code_rounded, _green),
-      _FeatureItem('Interpretador Cbr em Dart, sem enviar código para um servidor', Icons.phonelink_lock_rounded, _blue),
-      _FeatureItem('Web, Android, iOS, Windows, macOS e Linux', Icons.devices_rounded, _yellow),
-      _FeatureItem('Abertura e salvamento de arquivos .cbr', Icons.save_alt_rounded, _green),
-    ];
-    return Container(
-      padding: const EdgeInsets.all(17),
-      decoration: BoxDecoration(color: _surface, borderRadius: BorderRadius.circular(13), border: Border.all(color: _border)),
-      child: Column(
-        children: features
-            .map(
-              (feature) => Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Row(
-                  children: [
-                    Icon(feature.icon, color: feature.color, size: 18),
-                    const SizedBox(width: 10),
-                    Expanded(child: Text(feature.title, style: const TextStyle(color: _textSecondary, fontSize: 12.5))),
-                    const Icon(Icons.check_rounded, color: _green, size: 17),
-                  ],
-                ),
-              ),
-            )
-            .toList(),
-      ),
-    );
-  }
-}
-
-class _InfoScaffold extends StatelessWidget {
-  const _InfoScaffold({required this.eyebrow, required this.title, required this.subtitle, required this.children});
-
-  final String eyebrow;
-  final String title;
-  final String subtitle;
-  final List<Widget> children;
 
   @override
   Widget build(BuildContext context) {
     return Center(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 1060),
+        constraints: const BoxConstraints(maxWidth: 760),
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(24, 28, 24, 40),
+          padding: const EdgeInsets.all(24),
           children: [
-            Text(eyebrow, style: const TextStyle(color: _greenBright, letterSpacing: 1.8, fontSize: 10.5, fontWeight: FontWeight.w800)),
-            const SizedBox(height: 9),
-            Text(title, style: const TextStyle(fontSize: 31, fontWeight: FontWeight.w800, letterSpacing: -0.8)),
-            const SizedBox(height: 7),
-            Text(subtitle, style: const TextStyle(color: _textSecondary, fontSize: 13.5, height: 1.55)),
-            const SizedBox(height: 22),
-            ...children,
+            const Text(
+              'Exemplos',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: _textPrimary),
+            ),
+            const SizedBox(height: 18),
+            _ExampleCard(title: 'Primeiro programa', onOpen: onOpenPortuguese),
+            _ExampleCard(title: 'Funções e repetição', onOpen: onOpenFunctions),
+            _ExampleCard(title: 'Entrada de dados', onOpen: onOpenInput),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ExampleCard extends StatelessWidget {
+  const _ExampleCard({required this.title, required this.onOpen});
+
+  final String title;
+  final VoidCallback onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: _surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: _border),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onOpen,
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+            child: Row(
+              children: [
+                const Icon(Icons.code_rounded, size: 18, color: _textSecondary),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: const TextStyle(color: _textPrimary, fontSize: 14, fontWeight: FontWeight.w600),
+                  ),
+                ),
+                const Icon(Icons.arrow_forward_rounded, size: 18, color: _textSecondary),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -1598,10 +1036,6 @@ class _SettingsDialogState extends State<_SettingsDialog> {
               label: '${_fontSize.round()} px',
               onChanged: (value) => setState(() => _fontSize = value),
             ),
-            const Text(
-              'A quebra de linha permanece ativa para facilitar a leitura em telas menores.',
-              style: TextStyle(color: _textSecondary, fontSize: 12),
-            ),
           ],
         ),
       ),
@@ -1648,9 +1082,9 @@ class _SyntaxController extends TextEditingController {
       } else if (token.startsWith('"')) {
         color = _yellow;
       } else if (RegExp(r'^\d').hasMatch(token)) {
-        color = const Color(0xFFFFA96B);
+        color = _blue;
       } else if (_keywords.contains(token)) {
-        color = const Color(0xFF69B8FF);
+        color = _greenBright;
       } else if (token == 'printf' || token == 'escreva' || token == 'scan') {
         color = _greenBright;
       }
@@ -1659,58 +1093,5 @@ class _SyntaxController extends TextEditingController {
     }
     if (last < textValue.length) children.add(TextSpan(text: textValue.substring(last)));
     return TextSpan(style: style, children: children);
-  }
-}
-
-class _UpstreamStatus extends ChangeNotifier {
-  _UpstreamStatus() : revision = _compiledUpstreamRevision;
-
-  String revision;
-  bool checking = false;
-  bool available = false;
-  DateTime? checkedAt;
-  String? error;
-  bool _disposed = false;
-
-  @override
-  void dispose() {
-    _disposed = true;
-    super.dispose();
-  }
-
-  void _notify() {
-    if (!_disposed) notifyListeners();
-  }
-
-  Future<void> refresh() async {
-    if (checking || _disposed) return;
-    checking = true;
-    _notify();
-    try {
-      final response = await http
-          .get(
-            Uri.https('api.github.com', '/repos/vorgweb/C-Brasil/commits/main'),
-            headers: const {
-              'Accept': 'application/vnd.github+json',
-              'X-GitHub-Api-Version': '2022-11-28',
-              'User-Agent': 'C-Brasil-Executor',
-            },
-          )
-          .timeout(const Duration(seconds: 8));
-      if (response.statusCode != 200) {
-        throw StateError('GitHub respondeu HTTP ${response.statusCode}.');
-      }
-      final payload = jsonDecode(response.body) as Map<String, dynamic>;
-      revision = payload['sha'] as String? ?? revision;
-      available = true;
-      checkedAt = DateTime.now();
-      error = null;
-    } catch (exception) {
-      available = false;
-      error = exception.toString();
-    } finally {
-      checking = false;
-      _notify();
-    }
   }
 }

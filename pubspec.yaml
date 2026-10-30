@@ -1,5 +1,5 @@
 name: c_brasil_executor
-description: Executor multiplataforma da linguagem C Brasil (CBR), feito com Dart e Flutter.
+description: Editor e executor da linguagem C Brasil, feito em Dart e Flutter.
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -11,7 +11,6 @@ dependencies:
   flutter:
     sdk: flutter
   file_picker: ^12.0.0
-  http: ^1.2.2
 
 dev_dependencies:
   flutter_test:
@@ -20,3 +19,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/images/cbrasil-logo.png
