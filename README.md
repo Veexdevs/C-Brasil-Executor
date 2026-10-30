@@ -19,7 +19,7 @@ Instale Flutter stable 3.38.0 ou mais recente e, na raiz do projeto, gere os run
 
 ```sh
 flutter create --platforms=web,android,ios,windows,macos,linux --project-name=c_brasil_executor .
-python3 tool/ensure_android_internet.py
+python3 tool/ensure_android_internet.py  # Internet permission; skips an unused Android NDK download
 flutter pub get
 flutter test
 flutter run -d chrome       # web

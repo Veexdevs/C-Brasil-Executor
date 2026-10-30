@@ -249,9 +249,15 @@ jobs:
             echo "::error title=Invalid Linux bundle::The app executable is missing from the tarball."
             missing=1
           fi
-          if [[ -s "$linux_deb" ]] && ! dpkg-deb --contents "$linux_deb" | grep -q '/usr/lib/cbrasil-executor/c_brasil_executor'; then
-            echo "::error title=Invalid Debian package::The app executable is missing from the package."
-            missing=1
+          if [[ -s "$linux_deb" ]]; then
+            deb_contents="$(mktemp -d)"
+            if ! dpkg-deb -x "$linux_deb" "$deb_contents" ||
+              ! find "$deb_contents/usr/lib/cbrasil-executor" \
+                -maxdepth 1 -type f -executable -print -quit | grep -q .; then
+              echo "::error title=Invalid Debian package::The app executable is missing from the package."
+              missing=1
+            fi
+            rm -rf "$deb_contents"
           fi
           exit "$missing"
 
