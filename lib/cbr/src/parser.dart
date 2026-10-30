@@ -867,6 +867,15 @@ class CbrParser {
       case TokenType.identifier:
         _advance();
         return VariableExpr(token.lexeme, token.line, token.column);
+      // No dialeto original os nomes "inteiro", "real", "texto" e "logico"
+      // são identificadores comuns: só viram tipo quando iniciam uma
+      // declaração (tratado em _statement).
+      case TokenType.kwTypeInt:
+      case TokenType.kwTypeFloat:
+      case TokenType.kwTypeText:
+      case TokenType.kwTypeBool:
+        _advance();
+        return VariableExpr(token.lexeme, token.line, token.column);
       default:
         throw _error(
           token,

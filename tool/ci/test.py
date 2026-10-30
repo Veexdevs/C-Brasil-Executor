@@ -25,6 +25,8 @@ def escape(value: str) -> str:
 
 
 def guess_file(name: str) -> str:
+    if "abre" in name or "navega" in name:
+        return "test/widget_test.dart"
     if "interpretador" in name or "linguagem" in name:
         return "test/interpreter_test.dart"
     if "app" in name or "executor" in name or "widget" in name:
@@ -39,6 +41,7 @@ def main() -> int:
 
     names: dict[str, str] = {}
     failures: list[tuple[str, str]] = []
+    details: dict[str, list[str]] = {}
     prints: list[str] = []
     raw_noise: list[str] = []
 
@@ -61,6 +64,7 @@ def main() -> int:
             name = names.get(str(event.get("testID")), "teste")
             detail = str(event.get("error", "falhou"))
             trace = str(event.get("stackTrace", ""))
+            details.setdefault(name, []).append(detail)
             failures.append((name, detail, trace))
         elif kind == "testDone":
             if event.get("result") in {"failure", "error"}:
@@ -77,11 +81,14 @@ def main() -> int:
         print(f"[print] {item}")
 
     for name, detail, trace in failures:
-        snippet = detail
+        snippet = " | ".join(details.get(name, [detail])[-3:])
         for trace_line in trace.splitlines():
             if trace_line.startswith("test/"):
-                snippet = f"{detail} ({trace_line})"
+                snippet = f"{snippet} ({trace_line.strip()})"
                 break
+        if len(snippet) > 1500:
+            snippet = f"{snippet[:500]} … {snippet[-900:]}"
+
         print(
             f"::error file={guess_file(name)},title=Teste falhou: {escape(name)}"
             f"::{escape(snippet)}"
