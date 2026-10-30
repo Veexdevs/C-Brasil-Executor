@@ -23,7 +23,6 @@ abstract final class CbrColors {
   static const Color yellowSoft = Color(0xFFFFE08A);
   static const Color blue = Color(0xFF4FA8FF);
   static const Color blueDeep = Color(0xFF1B5C99);
-  static const Color red = Color(0xFFFF7B7B);
 
   static const Color codeText = Color(0xFFDBEDF2);
   static const Color codeKeyword = Color(0xFF6CBBFF);
@@ -31,7 +30,7 @@ abstract final class CbrColors {
   static const Color codeBuiltin = Color(0xFFFFD166);
   static const Color codeFunction = Color(0xFFBFE3FF);
   static const Color codeString = Color(0xFFE6C86E);
-  static const Color codeNumber = Color(0xFFFFA96B);
+  static const Color codeNumber = Color(0xFF80C8FF);
   static const Color codeComment = Color(0xFF5F7B88);
   static const Color codeOperator = Color(0xFF7FA7B8);
   static const Color codeMarker = Color(0xFF3BE3A4);
@@ -42,11 +41,6 @@ abstract final class CbrColors {
     end: Alignment.bottomRight,
   );
 
-  static const LinearGradient heroGradient = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [Color(0xFF0C2430), Color(0xFF081720)],
-  );
 }
 
 /// Fontes monoespaçadas com fallback para todas as plataformas.
@@ -166,7 +160,7 @@ ThemeData buildCbrTheme() {
     secondary: CbrColors.yellow,
     tertiary: CbrColors.blue,
     surface: CbrColors.surface,
-    error: CbrColors.red,
+    error: CbrColors.yellow,
   );
 
   return ThemeData(

@@ -63,7 +63,6 @@ class _DocsPageState extends State<DocsPage> {
                         padding: const EdgeInsets.only(bottom: 18),
                         child: _sectionCard(section),
                       ),
-                    _footer(),
                   ],
                 ),
               ),
@@ -75,22 +74,11 @@ class _DocsPageState extends State<DocsPage> {
   }
 
   Widget _header() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
       children: [
-        Row(
-          children: [
-            const Icon(Icons.menu_book_rounded, color: CbrColors.greenBright, size: 22),
-            const SizedBox(width: 10),
-            Text('Documentação', style: CbrTextStyles.headline.copyWith(fontSize: 26)),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Referência completa da linguagem C Brasil: tipos, operadores, '
-          'estruturas, funções, biblioteca padrão e os dois dialetos.',
-          style: CbrTextStyles.bodyMuted,
-        ),
+        const Icon(Icons.menu_book_rounded, color: CbrColors.greenBright, size: 22),
+        const SizedBox(width: 10),
+        Text('Documentação', style: CbrTextStyles.headline.copyWith(fontSize: 26)),
       ],
     );
   }
@@ -349,26 +337,4 @@ class _DocsPageState extends State<DocsPage> {
     );
   }
 
-  Widget _footer() {
-    return CbrPanel(
-      padding: const EdgeInsets.all(18),
-      gradient: const LinearGradient(
-        colors: [Color(0xFF0D2A24), Color(0xFF0B1D29)],
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.auto_awesome_rounded, color: CbrColors.yellow, size: 18),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              'A linguagem é mantida em github.com/vorgweb/C-Brasil. Quando o '
-              'repositório é atualizado, o executor é recompilado automaticamente '
-              'e a checagem de conformidade roda antes da publicação.',
-              style: CbrTextStyles.bodyMuted.copyWith(fontSize: 12.5),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }

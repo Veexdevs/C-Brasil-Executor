@@ -3,7 +3,6 @@ import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import 'reload_stub.dart'
     if (dart.library.js_interop) 'reload_web.dart' as reload;
@@ -15,8 +14,8 @@ class OpenedFile {
   final String content;
 }
 
-/// Acesso a arquivos, links e recarregamento, isolando o que é específico de
-/// cada plataforma.
+/// Acesso a arquivos e recarregamento, isolando o que é específico de cada
+/// plataforma.
 abstract final class PlatformService {
   static bool get isWeb => kIsWeb;
 
@@ -57,16 +56,6 @@ abstract final class PlatformService {
       return location?.toString() ?? (kIsWeb ? name : null);
     } catch (_) {
       return null;
-    }
-  }
-
-  static Future<bool> openUrl(String url) async {
-    final uri = Uri.tryParse(url);
-    if (uri == null) return false;
-    try {
-      return await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } catch (_) {
-      return false;
     }
   }
 

@@ -7,7 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 Future<void> pumpApp(WidgetTester tester) async {
   await tester.binding.setSurfaceSize(const Size(1440, 980));
   addTearDown(() => tester.binding.setSurfaceSize(null));
-  await tester.pumpWidget(const CbrApp(autoCheckUpstream: false));
+  await tester.pumpWidget(const CbrApp());
   await tester.pump(const Duration(milliseconds: 300));
 }
 
@@ -18,7 +18,11 @@ void main() {
     expect(find.byType(CbrLogo), findsWidgets);
     expect(find.byType(ConsolePanel), findsOneWidget);
     expect(find.text('Executar'), findsOneWidget);
-    expect(find.text('C Brasil'), findsWidgets);
+    expect(find.text('C Brasil'), findsOneWidget);
+    expect(find.text('(cbr)'), findsOneWidget);
+    expect(find.text('CBR'), findsNothing);
+    expect(find.textContaining('GitHub'), findsNothing);
+    expect(find.textContaining('conectado'), findsNothing);
   });
 
   testWidgets('navega para a documentação', (tester) async {
@@ -28,7 +32,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Primeiros passos'), findsWidgets);
-    expect(find.textContaining('Referência completa da linguagem'), findsOneWidget);
   });
 
   testWidgets('abre um exemplo e volta para o editor', (tester) async {
@@ -40,7 +43,6 @@ void main() {
 
     await tester.tap(find.text('Abrir no editor').first);
     await tester.pump();
-    // Deixa o aviso (SnackBar) sumir para não sobrar timer pendente.
     await tester.pump(const Duration(seconds: 4));
     await tester.pumpAndSettle();
 

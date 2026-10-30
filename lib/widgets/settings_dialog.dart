@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../services/platform_service.dart';
-import '../services/upstream_service.dart';
 import '../state/executor_state.dart';
 import '../theme/cbr_theme.dart';
 import 'cbr_panel.dart';
@@ -80,7 +79,6 @@ class _SettingsDialogState extends State<SettingsDialog> {
               const SizedBox(height: 8),
               _infoRow('Limite de instruções', '4 000 000'),
               _infoRow('Limite de tempo', '20 segundos'),
-              _infoRow('Versão da linguagem', UpstreamService.languageVersion),
               const SizedBox(height: 18),
               Text('Dados locais', style: CbrTextStyles.label),
               const SizedBox(height: 8),

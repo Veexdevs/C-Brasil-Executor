@@ -243,9 +243,9 @@ class CbrButton extends StatelessWidget {
           style: OutlinedButton.styleFrom(
             padding: EdgeInsets.symmetric(horizontal: compact ? 10 : 14, vertical: 12),
             minimumSize: const Size(0, 40),
-            side: BorderSide(color: CbrColors.red.withValues(alpha: 0.5)),
-            backgroundColor: CbrColors.red.withValues(alpha: 0.1),
-            foregroundColor: CbrColors.red,
+            side: BorderSide(color: CbrColors.yellow.withValues(alpha: 0.5)),
+            backgroundColor: CbrColors.yellow.withValues(alpha: 0.1),
+            foregroundColor: CbrColors.yellow,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
           child: child,

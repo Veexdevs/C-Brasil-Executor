@@ -59,9 +59,9 @@ TextStyle _base(double fontSize, Color? color, double height, bool marked) {
 TextStyle _markStyle(bool marked) {
   if (!marked) return const TextStyle();
   return const TextStyle(
-    backgroundColor: Color(0x33FF7B7B),
+    backgroundColor: Color(0x33FFCC4D),
     decoration: TextDecoration.underline,
-    decorationColor: CbrColors.red,
+    decorationColor: CbrColors.yellow,
   );
 }
 
