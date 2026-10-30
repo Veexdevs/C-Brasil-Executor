@@ -1118,7 +1118,7 @@ class _Runner {
           expression.arguments.first.column,
           context: 'O texto de printf',
         );
-        _emit(_interpolate(template, scope, expression));
+        _emit(_interpolate(template.value, scope, expression));
         return const CbrText('');
       case 'escreva':
       case 'escreval':

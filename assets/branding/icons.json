@@ -1,0 +1,31 @@
+{
+  "logo": "assets/branding/logo.png",
+  "generatedFrom": "assets/branding/logo-original.png",
+  "sizes": [
+    16,
+    20,
+    24,
+    29,
+    32,
+    40,
+    48,
+    58,
+    60,
+    64,
+    72,
+    76,
+    80,
+    87,
+    96,
+    120,
+    128,
+    144,
+    152,
+    167,
+    180,
+    192,
+    256,
+    512,
+    1024
+  ]
+}

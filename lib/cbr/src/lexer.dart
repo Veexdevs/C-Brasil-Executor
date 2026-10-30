@@ -36,6 +36,7 @@ class CbrError implements Exception {
 }
 
 enum CbrErrorCategory {
+  erro('Erro'),
   lexico('Erro de leitura'),
   sintatico('Erro de sintaxe'),
   tipo('Erro de tipo'),
