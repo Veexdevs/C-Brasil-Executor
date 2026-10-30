@@ -39,6 +39,9 @@ void main() {
     expect(find.text('Abrir no editor'), findsWidgets);
 
     await tester.tap(find.text('Abrir no editor').first);
+    await tester.pump();
+    // Deixa o aviso (SnackBar) sumir para não sobrar timer pendente.
+    await tester.pump(const Duration(seconds: 4));
     await tester.pumpAndSettle();
 
     expect(find.text('Executar'), findsOneWidget);

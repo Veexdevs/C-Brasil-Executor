@@ -34,10 +34,10 @@ class CbrEditingController extends TextEditingController {
     return _cache!;
   }
 
+  /// Descarta o cache depois de mudar tamanho da fonte ou linha destacada.
   void refreshHighlight() {
     _cacheKey = null;
     _cache = null;
-    notifyListeners();
   }
 }
 
@@ -68,7 +68,7 @@ class CbrCodeEditor extends StatefulWidget {
 class _CbrCodeEditorState extends State<CbrCodeEditor> {
   final ScrollController _vertical = ScrollController();
   final ScrollController _horizontal = ScrollController();
-  final FocusNode _focusNode = FocusNode();
+  final FocusNode _focusNode = FocusNode(debugLabel: 'editor CBR');
 
   @override
   void initState() {
@@ -111,8 +111,7 @@ class _CbrCodeEditorState extends State<CbrCodeEditor> {
     final selection = value.selection;
     if (!selection.isValid) return;
     final text = value.text;
-    final lineStart = text.lastIndexOf('\n', math.max(0, selection.start - 1)) + 1;
-    final indent = '    ';
+    const indent = '    ';
     if (!outdent) {
       final newText = text.replaceRange(selection.start, selection.end, indent);
       widget.controller.value = value.copyWith(
@@ -122,13 +121,12 @@ class _CbrCodeEditorState extends State<CbrCodeEditor> {
       );
       return;
     }
+    final lineStart = text.lastIndexOf('\n', math.max(0, selection.start - 1)) + 1;
     var remove = 0;
-    for (var index = 0; index < indent.length; index++) {
-      if (lineStart + index < text.length && text[lineStart + index] == ' ') {
-        remove++;
-      } else {
-        break;
-      }
+    while (remove < indent.length &&
+        lineStart + remove < text.length &&
+        text[lineStart + remove] == ' ') {
+      remove++;
     }
     if (remove == 0) return;
     final newText = text.replaceRange(lineStart, lineStart + remove, '');
@@ -144,7 +142,7 @@ class _CbrCodeEditorState extends State<CbrCodeEditor> {
   @override
   Widget build(BuildContext context) {
     return CallbackShortcuts(
-      bindings: {
+      bindings: <ShortcutActivator, VoidCallback>{
         const SingleActivator(LogicalKeyboardKey.keyR, control: true): () =>
             widget.onRun?.call(),
         const SingleActivator(LogicalKeyboardKey.keyR, meta: true): () =>
@@ -165,89 +163,84 @@ class _CbrCodeEditorState extends State<CbrCodeEditor> {
         const SingleActivator(LogicalKeyboardKey.tab, shift: true): () =>
             _insertIndent(outdent: true),
       },
-      child: Focus(
-        focusNode: _focusNode,
-        autofocus: true,
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final digits = '${widget.controller.text.split('\n').length}'.length;
-            final gutterWidth = 18.0 + digits * (widget.fontSize * 0.62);
-            final contentWidth = math.max(
-              constraints.maxWidth - gutterWidth,
-              _longestLineWidth(constraints.maxWidth - gutterWidth),
-            );
-            return Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _Gutter(
-                  controller: widget.controller,
-                  scrollController: _vertical,
-                  fontSize: widget.fontSize,
-                  lineHeight: _lineHeight,
-                  width: gutterWidth,
-                ),
-                Container(width: 1, color: CbrColors.border.withValues(alpha: 0.7)),
-                Expanded(
-                  child: Scrollbar(
-                    controller: _horizontal,
-                    scrollbarOrientation: ScrollbarOrientation.bottom,
-                    child: SingleChildScrollView(
-                      controller: _horizontal,
-                      scrollDirection: Axis.horizontal,
-                      padding: EdgeInsets.zero,
-                      child: SizedBox(
-                        width: contentWidth,
-                        height: constraints.maxHeight,
-                        child: TextField(
-                          controller: widget.controller,
-                          scrollController: _vertical,
-                          focusNode: _focusNode,
-                          expands: true,
-                          maxLines: null,
-                          minLines: null,
-                          autocorrect: false,
-                          enableSuggestions: false,
-                          keyboardType: TextInputType.multiline,
-                          textCapitalization: TextCapitalization.none,
-                          cursorColor: CbrColors.greenBright,
-                          cursorWidth: 2,
-                          style: CbrTextStyles.mono.copyWith(
-                            fontSize: widget.fontSize,
-                            height: 1.6,
-                          ),
-                          strutStyle: StrutStyle(
-                            fontFamily: 'monospace',
-                            fontFamilyFallback: kMonoFallback,
-                            fontSize: widget.fontSize,
-                            height: 1.6,
-                            forceStrutHeight: true,
-                          ),
-                          decoration: const InputDecoration(
-                            border: InputBorder.none,
-                            filled: false,
-                            isCollapsed: true,
-                            contentPadding: EdgeInsets.fromLTRB(14, 12, 32, 24),
-                          ),
-                        ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final lines = widget.controller.text.split('\n').length;
+          final gutterWidth = 20.0 + '$lines'.length * (widget.fontSize * 0.62);
+          final available = math.max(
+            80.0,
+            constraints.maxWidth - gutterWidth - 1,
+          );
+          final contentWidth = math.max(
+            available,
+            _longestLineWidth() + 48,
+          );
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _Gutter(
+                controller: widget.controller,
+                scrollController: _vertical,
+                fontSize: widget.fontSize,
+                lineHeight: _lineHeight,
+                width: gutterWidth,
+              ),
+              Container(width: 1, color: CbrColors.border.withValues(alpha: 0.7)),
+              Expanded(
+                child: SingleChildScrollView(
+                  controller: _horizontal,
+                  scrollDirection: Axis.horizontal,
+                  child: SizedBox(
+                    width: contentWidth,
+                    height: constraints.maxHeight,
+                    child: TextField(
+                      controller: widget.controller,
+                      scrollController: _vertical,
+                      focusNode: _focusNode,
+                      autofocus: true,
+                      expands: true,
+                      maxLines: null,
+                      minLines: null,
+                      autocorrect: false,
+                      enableSuggestions: false,
+                      keyboardType: TextInputType.multiline,
+                      textCapitalization: TextCapitalization.none,
+                      cursorColor: CbrColors.greenBright,
+                      cursorWidth: 2,
+                      style: CbrTextStyles.mono.copyWith(
+                        fontSize: widget.fontSize,
+                        height: 1.6,
+                      ),
+                      strutStyle: StrutStyle(
+                        fontFamily: 'monospace',
+                        fontFamilyFallback: kMonoFallback,
+                        fontSize: widget.fontSize,
+                        height: 1.6,
+                        forceStrutHeight: true,
+                      ),
+                      decoration: const InputDecoration(
+                        border: InputBorder.none,
+                        filled: false,
+                        isCollapsed: true,
+                        contentPadding: EdgeInsets.fromLTRB(14, 12, 32, 24),
                       ),
                     ),
                   ),
                 ),
-              ],
-            );
-          },
-        ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
 
-  double _longestLineWidth(double available) {
+  double _longestLineWidth() {
     var longest = 0;
     for (final line in widget.controller.text.split('\n')) {
       if (line.length > longest) longest = line.length;
     }
-    final estimated = longest * widget.fontSize * 0.62 + 80;
-    return math.max(estimated, available);
+    return longest * widget.fontSize * 0.62;
   }
 }
 
